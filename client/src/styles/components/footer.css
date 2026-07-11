@@ -1,0 +1,60 @@
+.footer {
+  @apply py-10 px-6 mt-16;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.footer-inner {
+  @apply max-w-5xl mx-auto grid gap-8;
+  grid-template-columns: 2fr 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .footer-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.footer-brand {
+  @apply text-lg font-extrabold;
+  color: var(--color-primary);
+  letter-spacing: -0.02em;
+}
+
+.footer-brand span {
+  color: var(--color-accent);
+}
+
+.footer-tagline {
+  @apply text-sm mt-1;
+  color: var(--color-text-muted);
+}
+
+.footer-heading {
+  @apply text-sm font-semibold mb-3;
+  color: var(--color-text);
+}
+
+.footer-links {
+  @apply flex flex-col gap-2;
+}
+
+.footer-link {
+  @apply text-sm transition-colors;
+  color: var(--color-text-muted);
+}
+
+.footer-link:hover {
+  color: var(--color-primary);
+}
+
+.footer-bottom {
+  @apply max-w-5xl mx-auto flex items-center justify-between mt-8 pt-6 text-xs;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+}
+
+.footer-affiliate-notice {
+  @apply text-xs mt-4 leading-relaxed;
+  color: var(--color-text-muted);
+}

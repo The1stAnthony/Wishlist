@@ -1,0 +1,123 @@
+.dashboard-header {
+  @apply mb-8;
+}
+
+.dashboard-greeting {
+  @apply text-3xl font-bold mb-1;
+  color: var(--color-text);
+}
+
+.dashboard-greeting span {
+  color: var(--color-primary);
+}
+
+.dashboard-date {
+  @apply text-sm;
+  color: var(--color-text-muted);
+}
+
+/* ── Upcoming birthdays strip ─────────────────────────────────────────────── */
+.upcoming-section {
+  @apply mb-10;
+}
+
+.upcoming-scroll {
+  @apply flex gap-4 overflow-x-auto pb-2;
+  scrollbar-width: none; /* hide scrollbar on Firefox */
+}
+
+.upcoming-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.birthday-chip {
+  @apply flex-shrink-0 flex flex-col items-center text-center p-4 rounded-2xl cursor-pointer transition-all;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  width: 110px;
+  box-shadow: var(--shadow-card);
+}
+
+.birthday-chip:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.birthday-chip-avatar {
+  @apply w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold text-white mb-2;
+  background-color: var(--color-primary);
+}
+
+.birthday-chip-name {
+  @apply text-xs font-semibold truncate w-full;
+  color: var(--color-text);
+}
+
+.birthday-chip-days {
+  @apply text-xs mt-0.5;
+  color: var(--color-text-muted);
+}
+
+.birthday-chip-days.soon {
+  color: var(--color-pink);
+  font-weight: 600;
+}
+
+/* ── Wishlists grid ───────────────────────────────────────────────────────── */
+.wishlists-grid {
+  @apply grid gap-4;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.wishlist-card {
+  @apply p-5 rounded-2xl flex flex-col gap-3 cursor-pointer transition-all;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+.wishlist-card:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.wishlist-card-title {
+  @apply text-base font-bold;
+  color: var(--color-text);
+}
+
+.wishlist-card-date {
+  @apply text-xs;
+  color: var(--color-text-muted);
+}
+
+.wishlist-card-meta {
+  @apply flex items-center gap-3;
+}
+
+.wishlist-card-footer {
+  @apply flex items-center justify-between mt-auto;
+}
+
+/* Add new wishlist card */
+.wishlist-card-new {
+  @apply p-5 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all;
+  border: 2px dashed var(--color-border);
+  min-height: 140px;
+  color: var(--color-text-muted);
+}
+
+.wishlist-card-new:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: #EDE9FE20;
+}
+
+.wishlist-card-new-icon {
+  @apply text-3xl;
+}
+
+.wishlist-card-new-label {
+  @apply text-sm font-semibold;
+}

@@ -1,0 +1,49 @@
+.navbar {
+  @apply sticky top-0 z-50 flex items-center justify-between px-6 py-3;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.navbar-brand {
+  @apply flex items-center gap-2 text-xl font-extrabold;
+  color: var(--color-primary);
+  letter-spacing: -0.02em;
+}
+
+.navbar-brand span {
+  color: var(--color-accent);
+}
+
+.navbar-nav {
+  @apply flex items-center gap-1;
+}
+
+.navbar-link {
+  @apply px-3 py-2 rounded-lg text-sm font-medium transition-all;
+  color: var(--color-text-muted);
+}
+
+.navbar-link:hover {
+  background-color: #F3F4F6;
+  color: var(--color-text);
+}
+
+.navbar-link.active {
+  color: var(--color-primary);
+  background-color: #EDE9FE;
+}
+
+.navbar-actions {
+  @apply flex items-center gap-2;
+}
+
+.navbar-user {
+  @apply flex items-center gap-2 text-sm font-medium;
+  color: var(--color-text);
+}
+
+.navbar-avatar {
+  @apply w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold;
+  background-color: var(--color-primary);
+}

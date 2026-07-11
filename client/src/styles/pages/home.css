@@ -1,0 +1,148 @@
+/* ── Hero section ─────────────────────────────────────────────────────────── */
+.hero {
+  @apply relative overflow-hidden text-center px-6 py-24;
+  background: linear-gradient(135deg, #EDE9FE 0%, #FAF9FF 50%, #FEF3C7 100%);
+}
+
+.hero-eyebrow {
+  @apply inline-block text-sm font-semibold px-4 py-1.5 rounded-full mb-4;
+  background-color: rgba(124,58,237,0.1);
+  color: var(--color-primary);
+}
+
+.hero-title {
+  @apply text-5xl font-extrabold leading-tight mb-4 mx-auto;
+  max-width: 700px;
+  color: var(--color-text);
+  letter-spacing: -0.03em;
+}
+
+.hero-title span {
+  color: var(--color-primary);
+}
+
+.hero-subtitle {
+  @apply text-lg mb-8 mx-auto;
+  max-width: 520px;
+  color: var(--color-text-muted);
+}
+
+.hero-actions {
+  @apply flex flex-wrap items-center justify-center gap-4;
+}
+
+/* Decorative floating emoji elements */
+.hero-decoration {
+  @apply absolute pointer-events-none select-none text-4xl;
+  opacity: 0.3;
+}
+
+/* ── How it works section ─────────────────────────────────────────────────── */
+.how-it-works {
+  @apply py-20 px-6;
+  background-color: var(--color-surface);
+}
+
+.how-it-works-inner {
+  @apply max-w-4xl mx-auto;
+}
+
+.steps-grid {
+  @apply grid gap-8 mt-12;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 768px) {
+  .steps-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.step-card {
+  @apply text-center p-6 rounded-2xl;
+  background-color: var(--color-background);
+}
+
+.step-number {
+  @apply w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold mx-auto mb-4 text-white;
+  background-color: var(--color-primary);
+}
+
+.step-title {
+  @apply text-base font-semibold mb-2;
+  color: var(--color-text);
+}
+
+.step-desc {
+  @apply text-sm;
+  color: var(--color-text-muted);
+}
+
+/* ── Features / value props ───────────────────────────────────────────────── */
+.features {
+  @apply py-20 px-6;
+  background-color: var(--color-background);
+}
+
+.features-inner {
+  @apply max-w-5xl mx-auto;
+}
+
+.features-grid {
+  @apply grid gap-6 mt-12;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 640px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.feature-card {
+  @apply p-6 rounded-2xl;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.feature-icon {
+  @apply text-3xl mb-3;
+}
+
+.feature-title {
+  @apply text-base font-semibold mb-1;
+  color: var(--color-text);
+}
+
+.feature-desc {
+  @apply text-sm;
+  color: var(--color-text-muted);
+}
+
+/* ── CTA section ──────────────────────────────────────────────────────────── */
+.cta-section {
+  @apply py-20 px-6 text-center;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+}
+
+.cta-title {
+  @apply text-4xl font-extrabold mb-4;
+  letter-spacing: -0.03em;
+}
+
+.cta-subtitle {
+  @apply text-lg mb-8 opacity-90 mx-auto;
+  max-width: 480px;
+}
+
+.cta-btn {
+  @apply inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-lg transition-all;
+  background-color: var(--color-accent);
+  color: #1F2937;
+}
+
+.cta-btn:hover {
+  background-color: var(--color-accent-light, #FCD34D);
+  transform: scale(1.03);
+}

@@ -1,0 +1,37 @@
+# ── Dependencies ───────────────────────────────────────────
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# ── Environment variables (API keys, secrets) ───────────────
+# NEVER commit these — they contain your affiliate tag, JWT secret, AdSense ID
+.env
+.env.local
+.env.*.local
+
+# ── Database ────────────────────────────────────────────────
+# SQLite database file contains real user data — keep off GitHub
+*.db
+*.db-shm
+*.db-wal
+
+# ── Build output ────────────────────────────────────────────
+dist/
+client/dist/
+build/
+
+# ── Logs ────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── OS / editor junk ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── Vite / tooling cache ─────────────────────────────────────
+.vite/
+client/.vite/

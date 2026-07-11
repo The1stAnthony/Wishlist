@@ -1,0 +1,68 @@
+.auth-page {
+  @apply min-h-screen flex items-center justify-center px-4 py-12;
+  background: linear-gradient(135deg, #EDE9FE 0%, #FAF9FF 60%, #FEF3C7 100%);
+}
+
+.auth-card {
+  @apply w-full max-w-md p-8 rounded-2xl;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-modal);
+}
+
+.auth-logo {
+  @apply text-2xl font-extrabold text-center mb-6;
+  color: var(--color-primary);
+}
+
+.auth-logo span {
+  color: var(--color-accent);
+}
+
+.auth-title {
+  @apply text-2xl font-bold text-center mb-1;
+  color: var(--color-text);
+}
+
+.auth-subtitle {
+  @apply text-sm text-center mb-8;
+  color: var(--color-text-muted);
+}
+
+.auth-form {
+  @apply flex flex-col gap-5;
+}
+
+.auth-submit {
+  @apply w-full py-3 rounded-xl font-semibold text-white transition-all mt-2;
+  background-color: var(--color-primary);
+}
+
+.auth-submit:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-switch {
+  @apply text-sm text-center mt-6;
+  color: var(--color-text-muted);
+}
+
+.auth-switch a {
+  @apply font-semibold;
+  color: var(--color-primary);
+}
+
+.auth-switch a:hover {
+  text-decoration: underline;
+}
+
+.auth-error {
+  @apply text-sm text-center py-2.5 px-4 rounded-lg;
+  background-color: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+}

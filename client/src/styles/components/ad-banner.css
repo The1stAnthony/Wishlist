@@ -1,0 +1,50 @@
+/* ── Sidebar ad slot ─────────────────────────────────────────────────────── */
+/* 300px wide, positioned in the right column of .page-with-sidebar          */
+
+.ad-sidebar {
+  @apply sticky top-24 flex flex-col gap-4;
+}
+
+.ad-slot {
+  @apply rounded-xl overflow-hidden;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+/* Label above the ad so users know it's an advertisement */
+.ad-label {
+  @apply text-xs font-medium text-center py-1 uppercase tracking-widest;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* The actual AdSense iframe sits here — it fills this container */
+.ad-content {
+  @apply flex items-center justify-center;
+  min-height: 250px;
+  /* Placeholder background shown until AdSense loads */
+  background: linear-gradient(135deg, #FAF9FF, #EDE9FE);
+}
+
+/* Placeholder text shown in development when AdSense isn't configured */
+.ad-placeholder {
+  @apply text-center p-6;
+}
+
+.ad-placeholder-icon {
+  @apply text-4xl mb-2;
+}
+
+.ad-placeholder-text {
+  @apply text-xs;
+  color: var(--color-text-muted);
+}
+
+/* ── In-content banner (horizontal, full-width) ───────────────────────────── */
+.ad-banner-horizontal {
+  @apply rounded-xl overflow-hidden w-full;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  min-height: 90px;
+}

@@ -1,0 +1,162 @@
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
+import GiftCard from '../components/GiftCard';
+import AdBanner from '../components/AdBanner';
+
+/**
+ * The public-facing view of a wishlist — shown when someone opens a share link.
+ * Anyone can view this page without being logged in.
+ * Gifters can mark items as purchased to avoid duplicates.
+ */
+export default function SharedList() {
+  const { token } = useParams();
+
+  const [data,    setData]    = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState('');
+
+  useEffect(() => {
+    axios.get(`/api/wishlists/share/${token}`)
+      .then((res) => setData(res.data))
+      .catch(() => setError('This wishlist is private or no longer exists.'))
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  async function handlePurchase(itemId) {
+    try {
+      await axios.post(`/api/wishlists/items/${itemId}/purchase`);
+      // Update local state so the card shows as purchased immediately
+      setData((prev) => ({
+        ...prev,
+        items: prev.items.map((i) =>
+          i.id === itemId ? { ...i, is_purchased: 1 } : i
+        ),
+      }));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Could not mark item as purchased.');
+    }
+  }
+
+  if (loading) return <div className="page-loading">Loading wishlist…</div>;
+
+  if (error) {
+    return (
+      <div className="page-loading">
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎁</p>
+          <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{error}</p>
+          <Link to="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>
+            Go to WishDay
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const { wishlist, owner, items } = data;
+
+  const unpurchased = items.filter((i) => !i.is_purchased);
+  const purchased   = items.filter((i) => i.is_purchased);
+
+  return (
+    <div className="page-with-sidebar">
+      <div>
+        {/* ── Header ──────────────────────────────────────────────────────── */}
+        <div style={{ textAlign: 'center', padding: '2rem 0 1.5rem' }}>
+          <p style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎂</p>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '0.25rem' }}>
+            {wishlist.title}
+          </h1>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+            {owner?.name}'s wishlist
+            {wishlist.event_date && ` · ${new Date(wishlist.event_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
+          </p>
+
+          {wishlist.description && (
+            <p style={{ marginTop: '0.75rem', color: 'var(--color-text-muted)', maxWidth: 480, margin: '0.75rem auto 0' }}>
+              {wishlist.description}
+            </p>
+          )}
+        </div>
+
+        {/* ── Gifter tip ───────────────────────────────────────────────────── */}
+        <div style={{
+          background: 'linear-gradient(135deg, #EDE9FE, #FAF9FF)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '1rem 1.25rem',
+          marginBottom: '1.5rem',
+          fontSize: '0.875rem',
+          color: 'var(--color-primary-dark)',
+        }}>
+          💡 <strong>Tip:</strong> After you purchase a gift, click "Mark bought" so no one else buys the same thing!
+        </div>
+
+        {/* ── Gift items grid ───────────────────────────────────────────────── */}
+        {unpurchased.length === 0 && purchased.length === 0 && (
+          <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '3rem 0' }}>
+            This wishlist doesn't have any items yet.
+          </p>
+        )}
+
+        {unpurchased.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+            {unpurchased.map((item) => (
+              <GiftCard key={item.id} item={item} onPurchase={handlePurchase} showPurchase />
+            ))}
+          </div>
+        )}
+
+        {/* Ad between sections */}
+        {unpurchased.length > 0 && <AdBanner format="horizontal" style={{ marginBottom: '2rem' }} />}
+
+        {/* Already purchased section */}
+        {purchased.length > 0 && (
+          <>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
+              ✅ Already purchased
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+              {purchased.map((item) => (
+                <GiftCard key={item.id} item={item} showPurchase={false} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Bottom CTA — viral growth hook */}
+        <div style={{
+          marginTop: '3rem',
+          padding: '2rem',
+          borderRadius: 'var(--radius-xl)',
+          background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
+          color: 'white',
+          textAlign: 'center',
+        }}>
+          <p style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+            🎂 Want your own birthday wishlist?
+          </p>
+          <p style={{ opacity: 0.85, marginBottom: '1rem', fontSize: '0.9rem' }}>
+            Create yours on WishDay — free forever.
+          </p>
+          <Link to="/register" style={{
+            display: 'inline-block',
+            background: 'var(--color-accent)',
+            color: '#1F2937',
+            fontWeight: 700,
+            padding: '0.75rem 2rem',
+            borderRadius: 'var(--radius-md)',
+          }}>
+            Create my wishlist
+          </Link>
+        </div>
+      </div>
+
+      {/* ── Sidebar ads ───────────────────────────────────────────────────── */}
+      <aside className="sidebar-ads ad-sidebar">
+        <AdBanner format="sidebar" />
+        <AdBanner format="sidebar" />
+      </aside>
+    </div>
+  );
+}

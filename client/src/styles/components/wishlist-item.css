@@ -1,0 +1,78 @@
+.wishlist-item {
+  @apply flex items-start gap-4 p-4 rounded-xl transition-all;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.wishlist-item:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-card);
+}
+
+.wishlist-item-thumb {
+  @apply w-16 h-16 rounded-lg object-cover flex-shrink-0;
+  background-color: #F3F4F6;
+}
+
+.wishlist-item-thumb-placeholder {
+  @apply w-16 h-16 rounded-lg flex items-center justify-center text-2xl flex-shrink-0;
+  background: linear-gradient(135deg, #EDE9FE, #FEF3C7);
+}
+
+.wishlist-item-info {
+  @apply flex-1 min-w-0;
+}
+
+.wishlist-item-name {
+  @apply text-sm font-semibold truncate;
+  color: var(--color-text);
+}
+
+.wishlist-item-desc {
+  @apply text-xs mt-0.5 line-clamp-2;
+  color: var(--color-text-muted);
+}
+
+.wishlist-item-meta {
+  @apply flex items-center gap-3 mt-2;
+}
+
+.wishlist-item-price {
+  @apply text-sm font-bold;
+  color: var(--color-primary);
+}
+
+.wishlist-item-actions {
+  @apply flex items-center gap-2 flex-shrink-0;
+}
+
+.wishlist-item-link {
+  @apply text-xs font-semibold px-3 py-1.5 rounded-lg transition-all;
+  background-color: var(--color-accent);
+  color: #1F2937;
+}
+
+.wishlist-item-link:hover {
+  background-color: #D97706;
+}
+
+.wishlist-item-delete {
+  @apply p-1.5 rounded-lg transition-all;
+  color: var(--color-text-muted);
+}
+
+.wishlist-item-delete:hover {
+  background-color: #FEE2E2;
+  color: #EF4444;
+}
+
+/* When the gifter has marked this as purchased */
+.wishlist-item.is-purchased {
+  background-color: #F0FDF4;
+  border-color: #86EFAC;
+}
+
+.wishlist-item.is-purchased .wishlist-item-name {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}

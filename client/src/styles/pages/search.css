@@ -1,0 +1,132 @@
+.search-hero {
+  @apply py-12 px-6 text-center;
+  background: linear-gradient(135deg, #EDE9FE, #FAF9FF);
+}
+
+.search-hero-title {
+  @apply text-3xl font-bold mb-2;
+  color: var(--color-text);
+}
+
+.search-hero-sub {
+  @apply text-sm mb-6;
+  color: var(--color-text-muted);
+}
+
+/* ── Search bar ───────────────────────────────────────────────────────────── */
+.search-bar-wrapper {
+  @apply flex items-center gap-3 max-w-2xl mx-auto;
+  background-color: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition-fast);
+}
+
+.search-bar-wrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(124,58,237,0.1);
+}
+
+.search-bar-input {
+  @apply flex-1 text-base outline-none bg-transparent;
+  color: var(--color-text);
+}
+
+.search-bar-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.search-bar-btn {
+  @apply px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all flex-shrink-0;
+  background-color: var(--color-primary);
+}
+
+.search-bar-btn:hover {
+  background-color: var(--color-primary-dark);
+}
+
+/* ── Results area ─────────────────────────────────────────────────────────── */
+.search-results {
+  @apply py-6;
+}
+
+.search-results-title {
+  @apply text-lg font-semibold mb-4;
+  color: var(--color-text);
+}
+
+/* The big "Search on Amazon" CTA button */
+.amazon-cta {
+  @apply flex items-center justify-between p-5 rounded-2xl transition-all mb-6;
+  background: linear-gradient(135deg, #FF9900, #FF6600);
+  color: white;
+  box-shadow: 0 4px 16px rgba(255,153,0,0.3);
+}
+
+.amazon-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255,153,0,0.4);
+}
+
+.amazon-cta-left {
+  @apply flex flex-col gap-1;
+}
+
+.amazon-cta-label {
+  @apply text-xs font-medium uppercase tracking-wide opacity-80;
+}
+
+.amazon-cta-text {
+  @apply text-lg font-bold;
+}
+
+.amazon-cta-arrow {
+  @apply text-2xl;
+}
+
+/* ── Suggestion chips ─────────────────────────────────────────────────────── */
+.suggestion-chips {
+  @apply flex flex-wrap gap-2 mb-8;
+}
+
+.suggestion-chip {
+  @apply px-4 py-2 rounded-full text-sm font-medium transition-all;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.suggestion-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: #EDE9FE;
+}
+
+/* ── Category grid ────────────────────────────────────────────────────────── */
+.category-grid {
+  @apply grid gap-3;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.category-tile {
+  @apply p-4 rounded-xl flex flex-col items-center gap-2 text-center cursor-pointer transition-all;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.category-tile:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.category-tile-icon {
+  @apply text-3xl;
+}
+
+.category-tile-label {
+  @apply text-xs font-semibold;
+  color: var(--color-text);
+}
