@@ -132,6 +132,88 @@ export default function Wishlist() {
           </div>
         )}
 
+        {/* ── Name display toggle ──────────────────────────────────────────── */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+          padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          marginBottom: '0.75rem',
+        }}>
+          <input
+            id="use_real_name"
+            type="checkbox"
+            style={{ marginTop: '0.2rem', accentColor: 'var(--color-primary)', width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }}
+            checked={wishlist?.use_real_name !== 0}
+            onChange={async (e) => {
+              const newVal = e.target.checked;
+              try {
+                const res = await axios.patch(`/api/wishlists/${wishlist.id}`, {
+                  ...wishlist, use_real_name: newVal,
+                });
+                setWishlist(res.data.wishlist);
+              } catch {
+                setError('Could not update name setting.');
+              }
+            }}
+          />
+          <label htmlFor="use_real_name" style={{ cursor: 'pointer', flex: 1 }}>
+            <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text)' }}>
+              👤 Show my real name on this list
+            </p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+              {wishlist?.use_real_name !== 0
+                ? 'Your full name is shown — great for sharing with family and close friends.'
+                : 'Your display name / alias is shown instead — better for public sharing or social media.'}
+            </p>
+          </label>
+        </div>
+
+        {/* ── Address sharing toggle ───────────────────────────────────────── */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+          padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)',
+          background: wishlist?.share_address ? '#F0FDF4' : 'var(--color-surface)',
+          border: `1px solid ${wishlist?.share_address ? '#86EFAC' : 'var(--color-border)'}`,
+          marginBottom: '1.5rem',
+        }}>
+          <input
+            id="share_address"
+            type="checkbox"
+            style={{ marginTop: '0.2rem', accentColor: 'var(--color-primary)', width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }}
+            checked={Boolean(wishlist?.share_address)}
+            onChange={async (e) => {
+              const newVal = e.target.checked;
+              try {
+                const res = await axios.patch(`/api/wishlists/${wishlist.id}`, {
+                  ...wishlist, share_address: newVal,
+                });
+                setWishlist(res.data.wishlist);
+              } catch {
+                setError('Could not update address sharing setting.');
+              }
+            }}
+          />
+          <label htmlFor="share_address" style={{ cursor: 'pointer', flex: 1 }}>
+            <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text)' }}>
+              🏠 Let gifters ship directly to me
+            </p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+              {wishlist?.share_address
+                ? 'Your saved address will be visible on the shared list. Gifters can ship gifts straight to you.'
+                : 'Off — your address is hidden. Gifters can still buy from your list to give in person or use a gift note.'}
+            </p>
+            {wishlist?.share_address && !Boolean(wishlist?.street_address) && (
+              <p style={{ fontSize: '0.75rem', color: '#D97706', marginTop: '0.35rem', fontWeight: 500 }}>
+                ⚠️ No address saved yet —{' '}
+                <Link to="/profile" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>
+                  add one in your profile
+                </Link>
+              </p>
+            )}
+          </label>
+        </div>
+
         {error && <p className="auth-error" style={{ marginBottom: '1rem' }}>{error}</p>}
 
         {/* ── Add item form ─────────────────────────────────────────────────── */}
@@ -176,7 +258,7 @@ export default function Wishlist() {
 
             <div className="full-width">
               <label className="form-label">
-                Product URL (any store — Amazon links get auto-tagged with affiliate ID)
+                Product link — paste any URL (Amazon, Target, Etsy, anywhere)
               </label>
               <input
                 name="url"

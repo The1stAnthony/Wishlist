@@ -20,7 +20,7 @@ const CATEGORIES = [
  * When users click this link and buy anything within 24 hours, we earn a commission.
  */
 function buildAmazonAffiliateUrl(searchTerm) {
-  const tag    = process.env.AMAZON_AFFILIATE_TAG || 'wishday-20';
+  const tag    = process.env.AMAZON_AFFILIATE_TAG || 'alliwant-20';
   const query  = encodeURIComponent(searchTerm.trim());
   return `https://www.amazon.com/s?k=${query}&tag=${tag}`;
 }
@@ -30,7 +30,7 @@ function buildAmazonAffiliateUrl(searchTerm) {
  * Used when a user pastes an Amazon product URL into the wishlist.
  */
 function injectAffiliateTag(url) {
-  const tag = process.env.AMAZON_AFFILIATE_TAG || 'wishday-20';
+  const tag = process.env.AMAZON_AFFILIATE_TAG || 'alliwant-20';
 
   try {
     const parsed = new URL(url);
@@ -73,7 +73,7 @@ router.get('/', (req, res) => {
 // ── GET /api/search/categories ──────────────────────────────────────────────
 
 router.get('/categories', (req, res) => {
-  const tag = process.env.AMAZON_AFFILIATE_TAG || 'wishday-20';
+  const tag = process.env.AMAZON_AFFILIATE_TAG || 'alliwant-20';
 
   // Attach an affiliate URL to each category's suggested search terms
   const categoriesWithUrls = CATEGORIES.map((cat) => ({

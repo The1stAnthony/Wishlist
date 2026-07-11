@@ -1,17 +1,13 @@
-const express  = require('express');
-const bcrypt   = require('bcryptjs');
-const jwt      = require('jsonwebtoken');
-const db       = require('../database');
+const express     = require('express');
+const bcrypt      = require('bcryptjs');
+const jwt         = require('jsonwebtoken');
+const db          = require('../database');
 const requireAuth = require('../middleware/auth');
 
 const router = express.Router();
 
 // ── Helper ──────────────────────────────────────────────────────────────────
 
-/**
- * Creates a signed JWT containing the user's id, name, and email.
- * Tokens expire after 7 days so users stay logged in across sessions.
- */
 function createToken(user) {
   return jwt.sign(
     { id: user.id, name: user.name, email: user.email },
@@ -20,10 +16,21 @@ function createToken(user) {
   );
 }
 
+// Columns we're safe to return to the client (never password, never raw address unless requested)
+const PUBLIC_FIELDS = `
+  id, name, display_name, email, birthday, avatar_url, created_at
+`;
+
+// Address fields included only for the account owner's own profile fetch
+const OWNER_FIELDS = `
+  id, name, display_name, email, birthday, avatar_url, created_at,
+  street_address, city, state, zip_code, country
+`;
+
 // ── POST /api/auth/register ─────────────────────────────────────────────────
 
 router.post('/register', async (req, res) => {
-  const { name, email, password, birthday } = req.body;
+  const { name, display_name, email, password, birthday } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are required' });
@@ -33,20 +40,27 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 8 characters' });
   }
 
-  // Check if email is already registered
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (existing) {
     return res.status(409).json({ error: 'An account with that email already exists' });
   }
 
-  // Hash the password before storing — never store plaintext passwords
   const hashedPassword = await bcrypt.hash(password, 12);
 
   const result = db
-    .prepare('INSERT INTO users (name, email, password, birthday) VALUES (?, ?, ?, ?)')
-    .run(name, email.toLowerCase().trim(), hashedPassword, birthday || null);
+    .prepare(`
+      INSERT INTO users (name, display_name, email, password, birthday)
+      VALUES (?, ?, ?, ?, ?)
+    `)
+    .run(
+      name,
+      display_name?.trim() || null,
+      email.toLowerCase().trim(),
+      hashedPassword,
+      birthday || null
+    );
 
-  const user = db.prepare('SELECT id, name, email, birthday FROM users WHERE id = ?').get(result.lastInsertRowid);
+  const user = db.prepare(`SELECT ${PUBLIC_FIELDS} FROM users WHERE id = ?`).get(result.lastInsertRowid);
 
   res.status(201).json({ user, token: createToken(user) });
 });
@@ -61,10 +75,9 @@ router.post('/login', async (req, res) => {
   }
 
   const user = db
-    .prepare('SELECT id, name, email, birthday, password FROM users WHERE email = ?')
+    .prepare(`SELECT ${PUBLIC_FIELDS}, password FROM users WHERE email = ?`)
     .get(email.toLowerCase().trim());
 
-  // Use a generic error message so we don't reveal whether the email exists
   if (!user) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
@@ -74,19 +87,15 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
-  // Don't send the hashed password back to the client
   const { password: _pw, ...safeUser } = user;
-
   res.json({ user: safeUser, token: createToken(safeUser) });
 });
 
 // ── GET /api/auth/me ────────────────────────────────────────────────────────
-// Returns the current user's profile — useful for restoring session on page load
 
 router.get('/me', requireAuth, (req, res) => {
-  const user = db
-    .prepare('SELECT id, name, email, birthday, avatar_url, created_at FROM users WHERE id = ?')
-    .get(req.user.id);
+  // Return address fields for the account owner's own session restore
+  const user = db.prepare(`SELECT ${OWNER_FIELDS} FROM users WHERE id = ?`).get(req.user.id);
 
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
@@ -96,17 +105,38 @@ router.get('/me', requireAuth, (req, res) => {
 });
 
 // ── PATCH /api/auth/profile ─────────────────────────────────────────────────
+// Handles both basic info and private address in one call
 
 router.patch('/profile', requireAuth, (req, res) => {
-  const { name, birthday } = req.body;
+  const {
+    name, display_name, birthday,
+    street_address, city, state, zip_code, country,
+  } = req.body;
 
-  db.prepare('UPDATE users SET name = ?, birthday = ? WHERE id = ?')
-    .run(name, birthday || null, req.user.id);
+  db.prepare(`
+    UPDATE users
+    SET name           = ?,
+        display_name   = ?,
+        birthday       = ?,
+        street_address = ?,
+        city           = ?,
+        state          = ?,
+        zip_code       = ?,
+        country        = ?
+    WHERE id = ?
+  `).run(
+    name,
+    display_name?.trim() || null,
+    birthday       || null,
+    street_address || null,
+    city           || null,
+    state          || null,
+    zip_code       || null,
+    country        || 'US',
+    req.user.id
+  );
 
-  const updated = db
-    .prepare('SELECT id, name, email, birthday, avatar_url FROM users WHERE id = ?')
-    .get(req.user.id);
-
+  const updated = db.prepare(`SELECT ${OWNER_FIELDS} FROM users WHERE id = ?`).get(req.user.id);
   res.json({ user: updated });
 });
 

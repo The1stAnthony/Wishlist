@@ -27,26 +27,27 @@ router.get('/my', requireAuth, (req, res) => {
 // Create a new wishlist
 
 router.post('/', requireAuth, (req, res) => {
-  const { title, description, event_date, is_public } = req.body;
+  const { title, description, event_date, is_public, share_address, use_real_name } = req.body;
 
   if (!title) {
     return res.status(400).json({ error: 'A title is required' });
   }
 
-  // Generate a short random token for the shareable public link
   const shareToken = uuid().replace(/-/g, '').slice(0, 16);
 
   const result = db
     .prepare(`
-      INSERT INTO wishlists (user_id, title, description, event_date, is_public, share_token)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO wishlists (user_id, title, description, event_date, is_public, share_address, use_real_name, share_token)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `)
     .run(
       req.user.id,
       title,
-      description || null,
-      event_date  || null,
-      is_public !== undefined ? (is_public ? 1 : 0) : 1,
+      description    || null,
+      event_date     || null,
+      is_public     !== undefined ? (is_public     ? 1 : 0) : 1,
+      share_address !== undefined ? (share_address ? 1 : 0) : 0,
+      use_real_name !== undefined ? (use_real_name ? 1 : 0) : 1,
       shareToken
     );
 
@@ -69,9 +70,27 @@ router.get('/share/:token', (req, res) => {
     return res.status(404).json({ error: 'Wishlist not found or is private' });
   }
 
-  const owner = db
-    .prepare('SELECT id, name FROM users WHERE id = ?')
+  // Resolve the name to display publicly based on the owner's per-list preference
+  // use_real_name = 1 → show real name (default, for family/friends)
+  // use_real_name = 0 → show display name/alias (for privacy/social sharing)
+  const ownerQuery = db
+    .prepare('SELECT id, name, display_name, street_address, city, state, zip_code, country FROM users WHERE id = ?')
     .get(wishlist.user_id);
+
+  const owner = {
+    id:           ownerQuery.id,
+    shown_name:   wishlist.use_real_name
+                    ? ownerQuery.name
+                    : (ownerQuery.display_name || ownerQuery.name),
+    // Address only included if the owner opted in for this list
+    ...(wishlist.share_address && {
+      street_address: ownerQuery.street_address,
+      city:           ownerQuery.city,
+      state:          ownerQuery.state,
+      zip_code:       ownerQuery.zip_code,
+      country:        ownerQuery.country,
+    }),
+  };
 
   const items = db
     .prepare(`
@@ -114,7 +133,7 @@ router.get('/:id', requireAuth, (req, res) => {
 // ── PATCH /api/wishlists/:id ────────────────────────────────────────────────
 
 router.patch('/:id', requireAuth, (req, res) => {
-  const { title, description, event_date, is_public } = req.body;
+  const { title, description, event_date, is_public, share_address, use_real_name } = req.body;
 
   const wishlist = db
     .prepare('SELECT id FROM wishlists WHERE id = ? AND user_id = ?')
@@ -126,9 +145,17 @@ router.patch('/:id', requireAuth, (req, res) => {
 
   db.prepare(`
     UPDATE wishlists
-    SET title = ?, description = ?, event_date = ?, is_public = ?
+    SET title = ?, description = ?, event_date = ?, is_public = ?, share_address = ?, use_real_name = ?
     WHERE id = ?
-  `).run(title, description || null, event_date || null, is_public ? 1 : 0, req.params.id);
+  `).run(
+    title,
+    description    || null,
+    event_date     || null,
+    is_public     ? 1 : 0,
+    share_address ? 1 : 0,
+    use_real_name !== undefined ? (use_real_name ? 1 : 0) : 1,
+    req.params.id
+  );
 
   const updated = db.prepare('SELECT * FROM wishlists WHERE id = ?').get(req.params.id);
   res.json({ wishlist: updated });

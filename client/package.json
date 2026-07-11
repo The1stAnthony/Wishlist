@@ -1,7 +1,7 @@
 {
-  "name": "wishday-client",
+  "name": "alliwant-client",
   "version": "1.0.0",
-  "description": "WishDay React frontend",
+  "description": "AllIWant React frontend",
   "type": "module",
   "scripts": {
     "dev": "vite",

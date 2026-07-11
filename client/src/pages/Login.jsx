@@ -7,9 +7,10 @@ export default function Login() {
   const { login }  = useAuth();
   const navigate   = useNavigate();
 
-  const [form, setForm]       = useState({ email: '', password: '' });
-  const [error, setError]     = useState('');
-  const [loading, setLoading] = useState(false);
+  const [form, setForm]             = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error,        setError]    = useState('');
+  const [loading,      setLoading]  = useState(false);
 
   function handleChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -33,7 +34,7 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">Wish<span>Day</span> 🎂</div>
+        <div className="auth-logo">All<span style={{ color: '#111827' }}> I </span><span>Want</span> 🎂</div>
 
         <h1 className="auth-title">Welcome back</h1>
         <p className="auth-subtitle">Sign in to manage your wishlists</p>
@@ -41,6 +42,7 @@ export default function Login() {
         {error && <p className="auth-error">{error}</p>}
 
         <form className="auth-form" onSubmit={handleSubmit}>
+
           <div>
             <label className="form-label" htmlFor="email">Email address</label>
             <input
@@ -58,17 +60,27 @@ export default function Login() {
 
           <div>
             <label className="form-label" htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              className="form-input"
-              placeholder="••••••••"
-              value={form.password}
-              onChange={handleChange}
-              required
-              autoComplete="current-password"
-            />
+            <div className="password-wrapper">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                className="form-input"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={handleChange}
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="auth-submit" disabled={loading}>

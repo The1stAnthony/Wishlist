@@ -84,7 +84,7 @@ export default function Search() {
                 Results for "<strong>{results.query}</strong>"
               </p>
 
-              {/* Big Amazon affiliate CTA — clicking earns commission */}
+              {/* Primary search CTA */}
               <a
                 href={results.amazon_url}
                 target="_blank"

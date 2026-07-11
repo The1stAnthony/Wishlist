@@ -4,9 +4,7 @@ const PRIORITY_LABELS = { 1: 'High priority', 2: 'Medium', 3: 'Nice to have' };
 const PRIORITY_BADGE  = { 1: 'badge-pink', 2: 'badge-amber', 3: '' };
 
 /**
- * Displays a single gift item — used on the public shared wishlist view.
- * The "Buy on Amazon" button opens the affiliate URL in a new tab,
- * which is how we earn commission.
+ * Displays a single gift item on the public shared wishlist view.
  *
  * Props:
  *   item         — wishlist_item row from the database
@@ -50,16 +48,14 @@ export default function GiftCard({ item, onPurchase, showPurchase = false }) {
         )}
 
         <div className="gift-card-footer">
-          {/* Affiliate link — opens Amazon in a new tab */}
           {affiliateUrl && !isPurchased && (
             <a
               href={affiliateUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="gift-card-buy-btn"
-              onClick={() => console.log('Affiliate click:', affiliateUrl)}
             >
-              🛒 Buy on Amazon
+              🛒 Shop Now
             </a>
           )}
 

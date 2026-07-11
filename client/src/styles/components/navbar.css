@@ -1,3 +1,4 @@
+/* ── Desktop navbar ───────────────────────────────────────────────────────── */
 .navbar {
   @apply sticky top-0 z-50 flex items-center justify-between px-6 py-3;
   background-color: var(--color-surface);
@@ -6,7 +7,7 @@
 }
 
 .navbar-brand {
-  @apply flex items-center gap-2 text-xl font-extrabold;
+  @apply flex items-center gap-1 text-xl font-extrabold flex-shrink-0;
   color: var(--color-primary);
   letter-spacing: -0.02em;
 }
@@ -16,7 +17,7 @@
 }
 
 .navbar-nav {
-  @apply flex items-center gap-1;
+  @apply hidden md:flex items-center gap-1;
 }
 
 .navbar-link {
@@ -39,11 +40,132 @@
 }
 
 .navbar-user {
-  @apply flex items-center gap-2 text-sm font-medium;
+  @apply hidden md:flex items-center gap-2 text-sm font-medium cursor-pointer;
   color: var(--color-text);
+  text-decoration: none;
+}
+
+.navbar-user-name {
+  @apply hidden lg:block;
 }
 
 .navbar-avatar {
-  @apply w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold;
+  @apply w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0;
   background-color: var(--color-primary);
+}
+
+/* ── Hamburger button ─────────────────────────────────────────────────────── */
+.hamburger {
+  @apply flex md:hidden flex-col justify-center items-center w-9 h-9 rounded-lg gap-1.5 transition-all;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.375rem;
+}
+
+.hamburger:hover {
+  background-color: #F3F4F6;
+}
+
+/* The three bars */
+.hamburger span {
+  @apply block w-5 rounded-full transition-all duration-200;
+  height: 2px;
+  background-color: var(--color-text);
+  transform-origin: center;
+}
+
+/* Animate into an X when open */
+.hamburger.is-open span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.hamburger.is-open span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.hamburger.is-open span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* ── Mobile drawer overlay ────────────────────────────────────────────────── */
+.mobile-overlay {
+  @apply fixed inset-0 z-40 md:hidden;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+/* ── Mobile drawer ────────────────────────────────────────────────────────── */
+.mobile-drawer {
+  @apply fixed top-0 right-0 h-full w-72 z-50 md:hidden flex flex-col;
+  background-color: var(--color-surface);
+  box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+  transform: translateX(100%);
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-drawer.is-open {
+  transform: translateX(0);
+}
+
+.mobile-drawer-header {
+  @apply flex items-center justify-between px-5 py-4;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mobile-close {
+  @apply w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.mobile-close:hover {
+  background-color: #F3F4F6;
+  color: var(--color-text);
+}
+
+.mobile-nav {
+  @apply flex flex-col flex-1 p-4 gap-1 overflow-y-auto;
+}
+
+.mobile-user-info {
+  @apply flex items-center gap-3 p-3 rounded-xl mb-3;
+  background-color: var(--color-background);
+}
+
+.mobile-nav-link {
+  @apply flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all;
+  color: var(--color-text);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.mobile-nav-link:hover {
+  background-color: #F3F4F6;
+}
+
+.mobile-nav-link.active {
+  background-color: #EDE9FE;
+  color: var(--color-primary);
+}
+
+.mobile-signout {
+  @apply mt-auto;
+  color: var(--color-text-muted);
+}
+
+.mobile-signout:hover {
+  background-color: #FEE2E2;
+  color: #EF4444;
+}
+
+.mobile-nav-cta {
+  @apply mt-3 text-center rounded-xl py-3 text-sm;
+  width: 100%;
+  justify-content: center;
 }

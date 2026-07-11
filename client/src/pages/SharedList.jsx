@@ -47,7 +47,7 @@ export default function SharedList() {
           <p style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎁</p>
           <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{error}</p>
           <Link to="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>
-            Go to WishDay
+            Go to AllIWant
           </Link>
         </div>
       </div>
@@ -69,7 +69,7 @@ export default function SharedList() {
             {wishlist.title}
           </h1>
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-            {owner?.name}'s wishlist
+            {owner?.shown_name}'s wishlist
             {wishlist.event_date && ` · ${new Date(wishlist.event_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
           </p>
 
@@ -79,6 +79,30 @@ export default function SharedList() {
             </p>
           )}
         </div>
+
+        {/* ── Ship-to address (only shown if owner opted in) ───────────────── */}
+        {wishlist.share_address && owner?.street_address && (
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: '0.875rem',
+            padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)',
+            background: '#F0FDF4', border: '1px solid #86EFAC', marginBottom: '1.5rem',
+          }}>
+            <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>🏠</span>
+            <div>
+              <p style={{ fontWeight: 700, fontSize: '0.875rem', color: '#065F46', marginBottom: '0.25rem' }}>
+                Ship a gift directly to {owner.shown_name}
+              </p>
+              <p style={{ fontSize: '0.825rem', color: '#047857', lineHeight: 1.6 }}>
+                {owner.street_address}<br />
+                {owner.city}{owner.city && owner.state ? ', ' : ''}{owner.state} {owner.zip_code}<br />
+                {owner.country && owner.country !== 'US' ? owner.country : ''}
+              </p>
+              <p style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '0.5rem' }}>
+                Use this address at checkout and select "this is a gift" to ship directly.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ── Gifter tip ───────────────────────────────────────────────────── */}
         <div style={{
@@ -137,7 +161,7 @@ export default function SharedList() {
             🎂 Want your own birthday wishlist?
           </p>
           <p style={{ opacity: 0.85, marginBottom: '1rem', fontSize: '0.9rem' }}>
-            Create yours on WishDay — free forever.
+            Create yours on AllIWant — free forever.
           </p>
           <Link to="/register" style={{
             display: 'inline-block',

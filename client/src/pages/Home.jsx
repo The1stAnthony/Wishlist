@@ -4,7 +4,7 @@ import '../styles/pages/home.css';
 
 const FEATURES = [
   { icon: '🎂', title: 'Birthday Wishlists', desc: 'Build a list of gifts you actually want, then share the link with everyone who asks.' },
-  { icon: '🛍️', title: 'Shop with Affiliate Links', desc: 'Every gift idea links straight to Amazon. Friends buy it, you keep earning.' },
+  { icon: '🛍️', title: 'Shop Any Retailer', desc: 'Add gifts from Amazon, Target, Etsy — anywhere. Your people buy exactly what you want, from any store.' },
   { icon: '📅', title: 'Birthday Tracker', desc: 'Add friends and family so you never forget an important birthday again.' },
   { icon: '✅', title: 'No Duplicate Gifts', desc: "Gifters can mark items as purchased so two people don't buy the same thing." },
 ];
@@ -62,7 +62,7 @@ export default function Home() {
         <div className="how-it-works-inner">
           <p className="section-subtitle" style={{ textAlign: 'center' }}>SIMPLE AS 1-2-3</p>
           <h2 className="section-title" style={{ textAlign: 'center' }}>
-            How WishDay works
+            How <span style={{ color: 'var(--color-primary)' }}>All</span><span style={{ color: '#111827' }}> I </span><span style={{ color: 'var(--color-accent)' }}>Want</span> works
           </h2>
 
           <div className="steps-grid">
@@ -100,7 +100,7 @@ export default function Home() {
         <section className="cta-section">
           <h2 className="cta-title">Ready for your best birthday yet?</h2>
           <p className="cta-subtitle">
-            Join thousands of people who stopped wishing and started WishDay-ing.
+            Join thousands of people who finally get gifts they actually want.
           </p>
           <Link to="/register" className="cta-btn">
             🎂 Create my free wishlist

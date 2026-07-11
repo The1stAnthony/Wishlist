@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
   // On app load, check if a valid token is stored in localStorage
   // so users stay logged in after a page refresh
   useEffect(() => {
-    const token = localStorage.getItem('wishday_token');
+    const token = localStorage.getItem('alliwant_token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       axios
@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
         .then((res) => setUser(res.data.user))
         .catch(() => {
           // Token is expired or invalid — clear it
-          localStorage.removeItem('wishday_token');
+          localStorage.removeItem('alliwant_token');
           delete axios.defaults.headers.common['Authorization'];
         })
         .finally(() => setLoading(false));
@@ -33,13 +33,13 @@ export function AuthProvider({ children }) {
 
   // Saves the token and user to state after a successful login or register
   function handleAuthSuccess(user, token) {
-    localStorage.setItem('wishday_token', token);
+    localStorage.setItem('alliwant_token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setUser(user);
   }
 
-  async function register(name, email, password, birthday) {
-    const res = await axios.post('/api/auth/register', { name, email, password, birthday });
+  async function register(name, email, password, birthday, display_name) {
+    const res = await axios.post('/api/auth/register', { name, display_name, email, password, birthday });
     handleAuthSuccess(res.data.user, res.data.token);
     return res.data.user;
   }
@@ -51,7 +51,7 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
-    localStorage.removeItem('wishday_token');
+    localStorage.removeItem('alliwant_token');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   }

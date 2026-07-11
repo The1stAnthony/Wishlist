@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // WishDay brand palette
+        // AllIWant brand palette
         primary: {
           DEFAULT: '#7C3AED', // purple
           light: '#A78BFA',

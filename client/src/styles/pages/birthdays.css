@@ -1,0 +1,169 @@
+.birthdays-header {
+  @apply flex items-center justify-between mb-8 gap-4;
+}
+
+.birthdays-title {
+  @apply text-3xl font-bold;
+  color: var(--color-text);
+}
+
+.birthdays-subtitle {
+  @apply text-sm mt-1;
+  color: var(--color-text-muted);
+}
+
+/* ── Upcoming strip ───────────────────────────────────────────────────────── */
+.upcoming-banner {
+  @apply rounded-2xl p-5 mb-8;
+  background: linear-gradient(135deg, #EDE9FE, #FEF3C7);
+  border: 1px solid var(--color-primary-light);
+}
+
+.upcoming-banner-title {
+  @apply text-sm font-semibold mb-3;
+  color: var(--color-primary-dark);
+}
+
+.upcoming-chips {
+  @apply flex gap-3 flex-wrap;
+}
+
+.upcoming-chip {
+  @apply flex items-center gap-3 px-4 py-2.5 rounded-xl;
+  background-color: white;
+  box-shadow: var(--shadow-card);
+}
+
+.upcoming-chip-avatar {
+  @apply w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0;
+  background-color: var(--color-primary);
+}
+
+.upcoming-chip-name {
+  @apply text-sm font-semibold;
+  color: var(--color-text);
+}
+
+.upcoming-chip-date {
+  @apply text-xs;
+  color: var(--color-text-muted);
+}
+
+.upcoming-chip-days {
+  @apply text-xs font-bold px-2 py-0.5 rounded-full;
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.upcoming-chip-days.today {
+  background-color: var(--color-pink);
+}
+
+.upcoming-chip-days.soon {
+  background-color: var(--color-accent);
+  color: #1F2937;
+}
+
+/* ── Contact list ─────────────────────────────────────────────────────────── */
+.contacts-list {
+  @apply flex flex-col gap-3;
+}
+
+.contact-card {
+  @apply flex items-center gap-4 p-4 rounded-xl transition-all;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.contact-card:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-card);
+}
+
+.contact-avatar {
+  @apply w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white flex-shrink-0;
+  background-color: var(--color-primary);
+}
+
+.contact-info {
+  @apply flex-1 min-w-0;
+}
+
+.contact-name {
+  @apply text-sm font-semibold;
+  color: var(--color-text);
+}
+
+.contact-birthday {
+  @apply text-xs mt-0.5;
+  color: var(--color-text-muted);
+}
+
+.contact-notes {
+  @apply text-xs mt-1 truncate;
+  color: var(--color-text-muted);
+}
+
+.contact-actions {
+  @apply flex items-center gap-2 flex-shrink-0;
+}
+
+.contact-action-btn {
+  @apply p-2 rounded-lg text-sm transition-all;
+  color: var(--color-text-muted);
+}
+
+.contact-action-btn:hover {
+  background-color: #EDE9FE;
+  color: var(--color-primary);
+}
+
+.contact-action-btn.delete:hover {
+  background-color: #FEE2E2;
+  color: #EF4444;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+.contacts-empty {
+  @apply flex flex-col items-center justify-center py-16 text-center;
+}
+
+.contacts-empty-icon {
+  @apply text-5xl mb-4;
+}
+
+.contacts-empty-title {
+  @apply text-lg font-semibold mb-1;
+  color: var(--color-text);
+}
+
+.contacts-empty-desc {
+  @apply text-sm mb-6;
+  color: var(--color-text-muted);
+}
+
+/* ── Modal overlay ────────────────────────────────────────────────────────── */
+.modal-overlay {
+  @apply fixed inset-0 flex items-center justify-center z-50 p-4;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  @apply w-full max-w-md rounded-2xl p-6;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-modal);
+}
+
+.modal-title {
+  @apply text-lg font-bold mb-5;
+  color: var(--color-text);
+}
+
+.modal-form {
+  @apply flex flex-col gap-4;
+}
+
+.modal-actions {
+  @apply flex gap-3 mt-2;
+}

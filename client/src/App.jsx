@@ -10,6 +10,8 @@ import Dashboard   from './pages/Dashboard';
 import Wishlist    from './pages/Wishlist';
 import SharedList  from './pages/SharedList';
 import Search      from './pages/Search';
+import Birthdays   from './pages/Birthdays';
+import Profile     from './pages/Profile';
 
 /**
  * Redirects unauthenticated users to /login.
@@ -43,6 +45,8 @@ export default function App() {
           <Route path="/dashboard"     element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/wishlist/:id"  element={<PrivateRoute><Wishlist /></PrivateRoute>} />
           <Route path="/search"        element={<PrivateRoute><Search /></PrivateRoute>} />
+          <Route path="/birthdays"     element={<PrivateRoute><Birthdays /></PrivateRoute>} />
+          <Route path="/profile"       element={<PrivateRoute><Profile /></PrivateRoute>} />
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />

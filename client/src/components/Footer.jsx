@@ -9,12 +9,12 @@ export default function Footer() {
       <div className="footer-inner">
         {/* Brand + affiliate disclosure */}
         <div>
-          <div className="footer-brand">Wish<span>Day</span> 🎂</div>
+          <div className="footer-brand">All<span style={{ color: '#111827' }}> I </span><span>Want</span> 🎂</div>
           <p className="footer-tagline">
             Share your wishlist. Get gifts you actually love.
           </p>
           <p className="footer-affiliate-notice">
-            WishDay participates in the Amazon Services LLC Associates Program,
+            AllIWant participates in the Amazon Services LLC Associates Program,
             an affiliate advertising program designed to provide a means for
             sites to earn advertising fees by advertising and linking to Amazon.com.
           </p>
@@ -35,7 +35,6 @@ export default function Footer() {
         <div>
           <p className="footer-heading">Legal</p>
           <div className="footer-links">
-            {/* These pages can be added later */}
             <a href="#" className="footer-link">Privacy Policy</a>
             <a href="#" className="footer-link">Terms of Service</a>
             <a href="#" className="footer-link">Contact Us</a>
@@ -43,8 +42,32 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* Buy Me a Coffee + credits */}
+      <div className="footer-support">
+        <a
+          href="https://www.buymeacoffee.com/seanaprothu"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bmc-btn"
+        >
+          ☕ Buy me a coffee
+        </a>
+        <p className="footer-credits">
+          Built &amp; maintained by{' '}
+          <a
+            href="https://github.com/The1stAnthony"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-credits-link"
+          >
+            @The1stAnthony
+          </a>{' '}
+          on GitHub
+        </p>
+      </div>
+
       <div className="footer-bottom">
-        <span>© {year} WishDay. All rights reserved.</span>
+        <span>© {year} AllIWant. All rights reserved.</span>
         <span>Made with 🎂 for birthday lovers</span>
       </div>
     </footer>

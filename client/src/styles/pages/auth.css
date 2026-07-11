@@ -61,8 +61,44 @@
 }
 
 .auth-error {
-  @apply text-sm text-center py-2.5 px-4 rounded-lg;
+  @apply text-sm text-center py-2.5 px-4 rounded-lg mb-2;
   background-color: #FEF2F2;
   color: #DC2626;
   border: 1px solid #FECACA;
+}
+
+/* ── Password field with show/hide toggle ─────────────────────────────────── */
+.password-wrapper {
+  @apply relative flex items-center;
+}
+
+/* The input gets right padding to make room for the toggle button */
+.password-wrapper .form-input {
+  @apply pr-16;
+}
+
+.password-toggle {
+  @apply absolute right-3 text-xs font-semibold px-2 py-1 rounded-md transition-all select-none;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.password-toggle:hover {
+  background-color: #EDE9FE;
+}
+
+/* ── Password match hint ──────────────────────────────────────────────────── */
+.password-match {
+  @apply text-xs mt-1.5 font-medium;
+}
+
+.password-match.match {
+  color: #059669;
+}
+
+.password-match.no-match {
+  color: #DC2626;
 }

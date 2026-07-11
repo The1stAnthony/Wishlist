@@ -1,0 +1,101 @@
+.profile-header {
+  @apply mb-8;
+}
+
+.profile-title {
+  @apply text-3xl font-bold;
+  color: var(--color-text);
+}
+
+.profile-subtitle {
+  @apply text-sm mt-1;
+  color: var(--color-text-muted);
+}
+
+/* ── Profile card ─────────────────────────────────────────────────────────── */
+.profile-card {
+  @apply p-6 rounded-2xl mb-6;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+.profile-avatar-row {
+  @apply flex items-center gap-4 mb-6;
+}
+
+.profile-avatar-large {
+  @apply w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white flex-shrink-0;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+}
+
+.profile-name-block {
+  @apply flex flex-col;
+}
+
+.profile-display-name {
+  @apply text-xl font-bold;
+  color: var(--color-text);
+}
+
+.profile-email {
+  @apply text-sm;
+  color: var(--color-text-muted);
+}
+
+.profile-member-since {
+  @apply text-xs mt-0.5;
+  color: var(--color-text-muted);
+}
+
+/* ── Edit form ────────────────────────────────────────────────────────────── */
+.profile-form {
+  @apply flex flex-col gap-4;
+}
+
+.profile-form-grid {
+  @apply grid gap-4;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 640px) {
+  .profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Stats row ────────────────────────────────────────────────────────────── */
+.profile-stats {
+  @apply grid gap-4 mb-6;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 480px) {
+  .profile-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.profile-stat {
+  @apply p-4 rounded-xl text-center;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+}
+
+.profile-stat-value {
+  @apply text-2xl font-bold;
+  color: var(--color-primary);
+}
+
+.profile-stat-label {
+  @apply text-xs mt-0.5;
+  color: var(--color-text-muted);
+}
+
+/* ── Success toast ────────────────────────────────────────────────────────── */
+.profile-success {
+  @apply text-sm py-2.5 px-4 rounded-lg text-center mb-4;
+  background-color: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #86EFAC;
+}
