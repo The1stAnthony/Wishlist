@@ -15,13 +15,15 @@ export default function Wishlist() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [wishlist, setWishlist] = useState(null);
-  const [items,    setItems]    = useState([]);
-  const [form,     setForm]     = useState(EMPTY_FORM);
-  const [loading,  setLoading]  = useState(true);
-  const [saving,   setSaving]   = useState(false);
-  const [error,    setError]    = useState('');
-  const [copied,   setCopied]   = useState(false);
+  const [wishlist,   setWishlist]   = useState(null);
+  const [items,      setItems]      = useState([]);
+  const [form,       setForm]       = useState(EMPTY_FORM);
+  const [loading,    setLoading]    = useState(true);
+  const [saving,     setSaving]     = useState(false);
+  const [error,      setError]      = useState('');
+  const [copied,     setCopied]     = useState(false);
+  const [enriching,  setEnriching]  = useState(false);
+  const [enrichHint, setEnrichHint] = useState('');
 
   useEffect(() => {
     axios.get(`/api/wishlists/${id}`)
@@ -37,6 +39,35 @@ export default function Wishlist() {
 
   function handleChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  // Auto-fill name/description/price/image from OG tags when user pastes a URL
+  async function handleUrlBlur() {
+    const url = form.url.trim();
+    if (!url.startsWith('http')) return;
+    setEnriching(true);
+    setEnrichHint('');
+    try {
+      const res = await axios.post('/api/scrape', { url });
+      const { name, description, image_url, price } = res.data;
+      setForm((prev) => ({
+        ...prev,
+        name:        name        && !prev.name.trim()        ? name             : prev.name,
+        description: description && !prev.description.trim() ? description      : prev.description,
+        image_url:   image_url   && !prev.image_url.trim()   ? image_url        : prev.image_url,
+        price:       price       && !prev.price               ? String(price)    : prev.price,
+      }));
+      if (name) setEnrichHint('✅ Auto-filled from link!');
+    } catch (err) {
+      const msg = err.response?.data?.error;
+      if (err.response?.data?.amazon) {
+        setEnrichHint('💡 Amazon links: use the Search page to find & add Amazon gifts instead.');
+      } else if (msg) {
+        setEnrichHint(`ℹ️ ${msg}`);
+      }
+    } finally {
+      setEnriching(false);
+    }
   }
 
   async function handleAddItem(e) {
@@ -76,6 +107,19 @@ export default function Wishlist() {
       setItems((prev) => prev.filter((i) => i.id !== itemId));
     } catch {
       setError('Could not delete item.');
+    }
+  }
+
+  // Owner self-purchase: marks items they've bought for themselves in shopping mode.
+  // Once fully purchased, the item disappears from shopping mode view (server filters it out).
+  async function handleSelfPurchase(itemId, qty) {
+    try {
+      await axios.post(`/api/wishlists/items/${itemId}/purchase`, { qty });
+      // Re-fetch so shopping mode filters correctly
+      const res = await axios.get(`/api/wishlists/${id}`);
+      setItems(res.data.items);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not mark item.');
     }
   }
 
@@ -217,6 +261,79 @@ export default function Wishlist() {
           </label>
         </div>
 
+        {/* ── Surprise / Shopping mode toggle ──────────────────────────────── */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+          padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)',
+          background: wishlist?.spoiler_free ? '#FFF7ED' : '#F0FDF4',
+          border: `1px solid ${wishlist?.spoiler_free ? '#FCD34D' : '#86EFAC'}`,
+          marginBottom: '1rem',
+        }}>
+          <input
+            id="spoiler_free"
+            type="checkbox"
+            style={{ marginTop: '0.2rem', accentColor: '#F59E0B', width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }}
+            checked={Boolean(wishlist?.spoiler_free)}
+            onChange={async (e) => {
+              const newVal = e.target.checked;
+              try {
+                const patchRes = await axios.patch(`/api/wishlists/${wishlist.id}`, {
+                  ...wishlist, spoiler_free: newVal,
+                });
+                setWishlist(patchRes.data.wishlist);
+                // Re-fetch items — backend returns different data for each mode
+                const itemsRes = await axios.get(`/api/wishlists/${wishlist.id}`);
+                setItems(itemsRes.data.items);
+              } catch {
+                setError('Could not update mode.');
+              }
+            }}
+          />
+          <label htmlFor="spoiler_free" style={{ cursor: 'pointer', flex: 1 }}>
+            <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text)' }}>
+              {wishlist?.spoiler_free ? '🎂 Surprise mode is ON' : '🛒 Shopping mode is ON'}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+              {Boolean(wishlist?.spoiler_free)
+                ? 'Your full list is shown with no purchase info — you\'ll be surprised on your birthday. Uncheck to switch to shopping mode.'
+                : 'Showing items you still need. You can see how many are left and mark things you\'ve bought yourself. Check to switch to surprise mode.'}
+            </p>
+          </label>
+        </div>
+
+        {wishlist?.spoiler_free && (
+          <div style={{
+            padding: '0.75rem 1rem', marginBottom: '1rem',
+            borderRadius: 'var(--radius-md)',
+            background: '#FFFBEB', border: '1px solid #FCD34D',
+            fontSize: '0.8rem', color: '#92400E',
+          }}>
+            🎂 <strong>Surprise mode:</strong> All purchase activity is hidden from you — your friends and family still see what's been claimed. You'll be surprised on the big day.
+          </div>
+        )}
+
+        {!wishlist?.spoiler_free && items.length > 0 && (
+          <div style={{
+            padding: '0.75rem 1rem', marginBottom: '1rem',
+            borderRadius: 'var(--radius-md)',
+            background: '#F0FDF4', border: '1px solid #86EFAC',
+            fontSize: '0.8rem', color: '#065F46',
+          }}>
+            🛒 <strong>Shopping mode:</strong> Showing {items.length} item{items.length !== 1 ? 's' : ''} you still need. Use "I bought this" to mark things off as you get them yourself.
+          </div>
+        )}
+
+        {!wishlist?.spoiler_free && items.length === 0 && (
+          <div style={{
+            padding: '0.75rem 1rem', marginBottom: '1rem',
+            borderRadius: 'var(--radius-md)',
+            background: '#F0FDF4', border: '1px solid #86EFAC',
+            fontSize: '0.8rem', color: '#065F46',
+          }}>
+            🎉 Everything on this list has been accounted for! Switch to surprise mode if you want to see the full list without purchase details.
+          </div>
+        )}
+
         {error && <p className="auth-error" style={{ marginBottom: '1rem' }}>{error}</p>}
 
         {/* ── Add item form ─────────────────────────────────────────────────── */}
@@ -275,16 +392,23 @@ export default function Wishlist() {
 
             <div className="full-width">
               <label className="form-label">
-                Product link — paste any URL (Amazon, Target, Etsy, anywhere)
+                Product link — paste any URL and we'll auto-fill the details
+                {enriching && <span style={{ color: 'var(--color-primary)', marginLeft: '0.5rem', fontSize: '0.75rem' }}>Looking up…</span>}
               </label>
               <input
                 name="url"
                 type="url"
                 className="form-input"
-                placeholder="https://www.amazon.com/dp/..."
+                placeholder="https://www.target.com/p/... or any product page"
                 value={form.url}
                 onChange={handleChange}
+                onBlur={handleUrlBlur}
               />
+              {enrichHint && (
+                <p style={{ fontSize: '0.75rem', marginTop: '0.35rem', color: enrichHint.startsWith('✅') ? '#059669' : 'var(--color-text-muted)' }}>
+                  {enrichHint}
+                </p>
+              )}
             </div>
 
             <div className="full-width">
@@ -324,6 +448,8 @@ export default function Wishlist() {
                 key={item.id}
                 item={item}
                 onDelete={handleDeleteItem}
+                spoilerFree={Boolean(wishlist?.spoiler_free)}
+                onSelfPurchase={!wishlist?.spoiler_free ? handleSelfPurchase : undefined}
               />
             ))}
           </div>

@@ -3,14 +3,16 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import GiftCard from '../components/GiftCard';
 import AdBanner from '../components/AdBanner';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * The public-facing view of a wishlist — shown when someone opens a share link.
  * Anyone can view this page without being logged in.
- * Gifters can mark items as purchased to avoid duplicates.
+ * Gifters must have an account to mark items purchased (prevents abuse).
  */
 export default function SharedList() {
   const { token } = useParams();
+  const { user }  = useAuth();
 
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
@@ -110,7 +112,11 @@ export default function SharedList() {
           fontSize: '0.875rem',
           color: 'var(--color-primary-dark)',
         }}>
-          💡 <strong>Tip:</strong> After you purchase a gift, click "Mark bought" so no one else buys the same thing!
+          {user ? (
+            <>💡 <strong>Tip:</strong> After you purchase a gift, click "Mark bought" so no one else buys the same thing!</>
+          ) : (
+            <>💡 <strong>Tip:</strong> <Link to="/login" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>Sign in</Link> or <Link to="/register" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>create a free account</Link> to mark gifts as bought — so no one else duplicates your gift!</>
+          )}
         </div>
 
         {/* ── Gift items grid ───────────────────────────────────────────────── */}

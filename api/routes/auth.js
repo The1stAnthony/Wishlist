@@ -103,18 +103,22 @@ router.get('/me', requireAuth, async (req, res) => {
 // ── PATCH /api/auth/profile ─────────────────────────────────────────────────
 
 router.patch('/profile', requireAuth, async (req, res) => {
-  const { name, display_name, birthday, street_address, city, state, zip_code, country } = req.body;
+  const { name, display_name, birthday, avatar_url,
+          street_address, city, state, zip_code, country } = req.body;
+
+  if (!name?.trim()) return res.status(400).json({ error: 'Name is required' });
 
   try {
     await query(
       `UPDATE users
-       SET name = $1, display_name = $2, birthday = $3,
-           street_address = $4, city = $5, state = $6, zip_code = $7, country = $8
-       WHERE id = $9`,
+       SET name = $1, display_name = $2, birthday = $3, avatar_url = $4,
+           street_address = $5, city = $6, state = $7, zip_code = $8, country = $9
+       WHERE id = $10`,
       [
-        name,
+        name.trim(),
         display_name?.trim() || null,
         birthday       || null,
+        avatar_url     || null,
         street_address || null,
         city           || null,
         state          || null,
@@ -129,6 +133,62 @@ router.patch('/profile', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Update profile error:', err);
     res.status(500).json({ error: 'Could not update profile' });
+  }
+});
+
+// ── PATCH /api/auth/password ────────────────────────────────────────────────
+
+router.patch('/password', requireAuth, async (req, res) => {
+  const { current_password, new_password } = req.body;
+
+  if (!current_password || !new_password) {
+    return res.status(400).json({ error: 'Current and new password are required' });
+  }
+  if (new_password.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters' });
+  }
+
+  try {
+    const row = await queryOne('SELECT password FROM users WHERE id = $1', [req.user.id]);
+    if (!row || !(await bcrypt.compare(current_password, row.password))) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    const hashed = await bcrypt.hash(new_password, 12);
+    await query('UPDATE users SET password = $1 WHERE id = $2', [hashed, req.user.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ error: 'Could not update password' });
+  }
+});
+
+// ── DELETE /api/auth/account ────────────────────────────────────────────────
+// Requires user to type the exact confirmation phrase to prevent accidents.
+
+router.delete('/account', requireAuth, async (req, res) => {
+  const { phrase } = req.body;
+
+  if (phrase !== 'Permanently Delete My Account') {
+    return res.status(400).json({ error: 'Please type the exact confirmation phrase' });
+  }
+
+  try {
+    // Cascade deletes wishlists + items if DB has ON DELETE CASCADE.
+    // If not, delete in order to avoid FK violations.
+    await query(
+      `DELETE FROM wishlist_items
+       WHERE wishlist_id IN (SELECT id FROM wishlists WHERE user_id = $1)`,
+      [req.user.id]
+    );
+    await query('DELETE FROM wishlists WHERE user_id = $1', [req.user.id]);
+    await query('DELETE FROM birthday_contacts WHERE user_id = $1', [req.user.id]);
+    await query('DELETE FROM users WHERE id = $1', [req.user.id]);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    res.status(500).json({ error: 'Could not delete account' });
   }
 });
 

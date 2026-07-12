@@ -228,15 +228,7 @@ export default function Search() {
               rel="noopener noreferrer"
               className="search-amazon-fallback-btn"
             >
-              🛒 Browse Amazon
-            </a>
-            <a
-              href={`https://www.walmart.com/search?q=${encodeURIComponent(query || 'birthday gifts')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="search-amazon-fallback-btn secondary"
-            >
-              🔵 Browse Walmart
+              🛒 Search all of Amazon
             </a>
           </div>
         </div>

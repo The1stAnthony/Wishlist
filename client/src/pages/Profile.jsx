@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import '../styles/pages/profile.css';
 
 export default function Profile() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     name:           '',
     display_name:   '',
     birthday:       '',
+    avatar_url:     '',
     street_address: '',
     city:           '',
     state:          '',
@@ -22,12 +24,24 @@ export default function Profile() {
   const [success, setSuccess] = useState(false);
   const [error,   setError]   = useState('');
 
+  // Password change state
+  const [pwForm,    setPwForm]    = useState({ current: '', newPw: '', confirm: '' });
+  const [pwSaving,  setPwSaving]  = useState(false);
+  const [pwError,   setPwError]   = useState('');
+  const [pwSuccess, setPwSuccess] = useState(false);
+
+  // Delete account state
+  const [deletePhrase, setDeletePhrase] = useState('');
+  const [deleting,     setDeleting]     = useState(false);
+  const [deleteError,  setDeleteError]  = useState('');
+
   useEffect(() => {
     if (user) {
       setForm({
         name:           user.name           || '',
         display_name:   user.display_name   || '',
         birthday:       user.birthday       || '',
+        avatar_url:     user.avatar_url     || '',
         street_address: user.street_address || '',
         city:           user.city           || '',
         state:          user.state          || '',
@@ -69,6 +83,40 @@ export default function Profile() {
     }
   }
 
+  async function handleChangePassword(e) {
+    e.preventDefault();
+    setPwError('');
+    if (pwForm.newPw !== pwForm.confirm) { setPwError('New passwords do not match.'); return; }
+    if (pwForm.newPw.length < 8) { setPwError('Password must be at least 8 characters.'); return; }
+    setPwSaving(true);
+    try {
+      await axios.patch('/api/auth/password', {
+        current_password: pwForm.current,
+        new_password:     pwForm.newPw,
+      });
+      setPwSuccess(true);
+      setPwForm({ current: '', newPw: '', confirm: '' });
+      setTimeout(() => setPwSuccess(false), 3000);
+    } catch (err) {
+      setPwError(err.response?.data?.error || 'Could not update password.');
+    } finally {
+      setPwSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteError('');
+    setDeleting(true);
+    try {
+      await axios.delete('/api/auth/account', { data: { phrase: deletePhrase } });
+      logout();
+      navigate('/');
+    } catch (err) {
+      setDeleteError(err.response?.data?.error || 'Could not delete account.');
+      setDeleting(false);
+    }
+  }
+
   const initials    = user?.name?.charAt(0).toUpperCase() || '?';
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -104,7 +152,21 @@ export default function Profile() {
         {/* ── Identity ──────────────────────────────────────────────────────── */}
         <div className="profile-card">
           <div className="profile-avatar-row">
-            <div className="profile-avatar-large">{initials}</div>
+            {form.avatar_url ? (
+              <img
+                src={form.avatar_url}
+                alt="Profile"
+                className="profile-avatar-large"
+                style={{ objectFit: 'cover' }}
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+              />
+            ) : null}
+            <div
+              className="profile-avatar-large"
+              style={form.avatar_url ? { display: 'none' } : {}}
+            >
+              {initials}
+            </div>
             <div className="profile-name-block">
               <span className="profile-display-name">{user?.display_name || user?.name}</span>
               <span className="profile-email">{user?.email}</span>
@@ -150,6 +212,23 @@ export default function Profile() {
                 disabled
                 style={{ opacity: 0.6, cursor: 'not-allowed' }}
                 title="Email cannot be changed"
+              />
+            </div>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label className="form-label">
+                Profile photo URL{' '}
+                <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>
+                  (paste a direct image link)
+                </span>
+              </label>
+              <input
+                name="avatar_url"
+                type="url"
+                className="form-input"
+                placeholder="https://example.com/your-photo.jpg"
+                value={form.avatar_url}
+                onChange={handleChange}
               />
             </div>
           </div>
@@ -225,6 +304,64 @@ export default function Profile() {
         </div>
       </form>
 
+      {/* ── Security / Change password ─────────────────────────────────────── */}
+      <form className="profile-card" style={{ marginTop: '1.5rem' }} onSubmit={handleChangePassword}>
+        <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)', marginBottom: '0.25rem' }}>
+          🔒 Change password
+        </p>
+        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>
+          Use a strong password with at least 8 characters.
+        </p>
+
+        {pwSuccess && <p className="profile-success">✅ Password updated!</p>}
+        {pwError   && <p className="auth-error" style={{ marginBottom: '0.75rem' }}>{pwError}</p>}
+
+        <div className="profile-form-grid">
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label className="form-label">Current password</label>
+            <input
+              type="password"
+              className="form-input"
+              value={pwForm.current}
+              onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))}
+              autoComplete="current-password"
+              required
+            />
+          </div>
+          <div>
+            <label className="form-label">New password</label>
+            <input
+              type="password"
+              className="form-input"
+              value={pwForm.newPw}
+              onChange={(e) => setPwForm((p) => ({ ...p, newPw: e.target.value }))}
+              autoComplete="new-password"
+              required
+            />
+          </div>
+          <div>
+            <label className="form-label">Confirm new password</label>
+            <input
+              type="password"
+              className="form-input"
+              value={pwForm.confirm}
+              onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))}
+              autoComplete="new-password"
+              required
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          className="btn-secondary"
+          style={{ marginTop: '1rem' }}
+          disabled={pwSaving}
+        >
+          {pwSaving ? 'Updating…' : 'Update password'}
+        </button>
+      </form>
+
       {/* ── Quick links ────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
         <Link to="/dashboard" className="profile-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none', padding: '1rem 1.25rem' }}>
@@ -235,6 +372,51 @@ export default function Profile() {
           <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>🎂 Birthday tracker</span>
           <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>→</span>
         </Link>
+      </div>
+
+      {/* ── Danger zone ───────────────────────────────────────────────────── */}
+      <div
+        className="profile-card"
+        style={{ marginTop: '1.5rem', border: '1.5px solid #FCA5A5', background: '#FFF5F5' }}
+      >
+        <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#991B1B', marginBottom: '0.25rem' }}>
+          ⚠️ Delete account
+        </p>
+        <p style={{ fontSize: '0.8rem', color: '#7F1D1D', marginBottom: '1.25rem' }}>
+          This permanently deletes your account, all wishlists, and all items. This cannot be undone.
+        </p>
+
+        {deleteError && <p className="auth-error" style={{ marginBottom: '0.75rem' }}>{deleteError}</p>}
+
+        <label className="form-label" style={{ color: '#7F1D1D' }}>
+          Type <strong>Permanently Delete My Account</strong> to confirm
+        </label>
+        <input
+          className="form-input"
+          value={deletePhrase}
+          onChange={(e) => setDeletePhrase(e.target.value)}
+          placeholder="Permanently Delete My Account"
+          style={{ marginBottom: '1rem', borderColor: '#FCA5A5' }}
+        />
+
+        <button
+          type="button"
+          onClick={handleDeleteAccount}
+          disabled={deleting || deletePhrase !== 'Permanently Delete My Account'}
+          style={{
+            padding: '0.625rem 1.25rem',
+            borderRadius: 'var(--radius-lg)',
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            border: 'none',
+            cursor: deletePhrase === 'Permanently Delete My Account' && !deleting ? 'pointer' : 'not-allowed',
+            background: deletePhrase === 'Permanently Delete My Account' ? '#DC2626' : '#FCA5A5',
+            color: 'white',
+            transition: 'background 0.15s',
+          }}
+        >
+          {deleting ? 'Deleting…' : 'Delete my account forever'}
+        </button>
       </div>
     </div>
   );

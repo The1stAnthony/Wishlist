@@ -2,7 +2,6 @@ const express     = require('express');
 const { v4: uuid } = require('uuid');
 const { query, queryOne } = require('../../lib/db');
 const requireAuth  = require('../middleware/auth');
-const optionalAuth = require('../middleware/optionalAuth');
 
 const router = express.Router();
 
@@ -125,7 +124,33 @@ router.get('/:id', requireAuth, async (req, res) => {
       [wishlist.id]
     );
 
-    res.json({ wishlist, items });
+    // Two owner-view modes — gifters (SharedList) always see real data.
+    //
+    // SURPRISE MODE (spoiler_free = true):
+    //   Full list returned, all purchase data stripped. Owner is completely in the dark.
+    //
+    // SHOPPING MODE (spoiler_free = false):
+    //   Only items that haven't been FULLY purchased are returned, so the owner
+    //   can see what they still need to buy for themselves. purchased_count is kept
+    //   so they know "2 of 3 still needed," but purchased_by is hidden so they
+    //   never learn which friend already bought one.
+    const safeItems = wishlist.spoiler_free
+      ? items.map(({ is_purchased, purchased_count, purchased_by, purchased_by_name, ...rest }) => ({
+          ...rest,
+          is_purchased:      false,
+          purchased_count:   0,
+          purchased_by:      null,
+          purchased_by_name: null,
+        }))
+      : items
+          .filter((i) => (i.purchased_count || 0) < (i.quantity || 1))
+          .map(({ purchased_by, purchased_by_name, ...rest }) => ({
+            ...rest,
+            purchased_by:      null,
+            purchased_by_name: null,
+          }));
+
+    res.json({ wishlist, items: safeItems });
   } catch (err) {
     console.error('Get wishlist error:', err);
     res.status(500).json({ error: 'Could not fetch wishlist' });
@@ -135,7 +160,7 @@ router.get('/:id', requireAuth, async (req, res) => {
 // ── PATCH /api/wishlists/:id ────────────────────────────────────────────────
 
 router.patch('/:id', requireAuth, async (req, res) => {
-  const { title, description, event_date, is_public, share_address, use_real_name } = req.body;
+  const { title, description, event_date, is_public, share_address, use_real_name, spoiler_free } = req.body;
 
   try {
     const existing = await queryOne(
@@ -147,8 +172,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
     const wishlist = await queryOne(
       `UPDATE wishlists
        SET title = $1, description = $2, event_date = $3,
-           is_public = $4, share_address = $5, use_real_name = $6
-       WHERE id = $7
+           is_public = $4, share_address = $5, use_real_name = $6, spoiler_free = $7
+       WHERE id = $8
        RETURNING *`,
       [
         title,
@@ -157,6 +182,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
         Boolean(is_public),
         Boolean(share_address),
         use_real_name !== undefined ? Boolean(use_real_name) : true,
+        spoiler_free  !== undefined ? Boolean(spoiler_free)  : false,
         req.params.id,
       ]
     );
@@ -272,10 +298,10 @@ router.delete('/items/:itemId', requireAuth, async (req, res) => {
 });
 
 // ── POST /api/wishlists/items/:itemId/purchase ──────────────────────────────
-// Public endpoint — anonymous gifters can mark items purchased on public lists.
-// If the caller is authenticated, we record who bought it.
+// Requires a logged-in account to mark items purchased.
+// This prevents anonymous abuse (marking everything bought to ruin someone's list).
 
-router.post('/items/:itemId/purchase', optionalAuth, async (req, res) => {
+router.post('/items/:itemId/purchase', requireAuth, async (req, res) => {
   const qty = Math.max(1, parseInt(req.body?.qty) || 1);
 
   try {
@@ -286,10 +312,6 @@ router.post('/items/:itemId/purchase', optionalAuth, async (req, res) => {
       [req.params.itemId]
     );
     if (!item) return res.status(404).json({ error: 'Item not found' });
-
-    if (!req.user && !item.is_public) {
-      return res.status(403).json({ error: 'Sign in to purchase from private wishlists' });
-    }
 
     const remaining = (item.quantity || 1) - (item.purchased_count || 0);
     if (remaining <= 0) return res.status(409).json({ error: 'This item is already fully purchased' });
@@ -304,7 +326,7 @@ router.post('/items/:itemId/purchase', optionalAuth, async (req, res) => {
            purchased_by    = COALESCE(purchased_by, $3)
        WHERE id = $4
        RETURNING *`,
-      [newCount, fullyPurchased, req.user?.id || null, req.params.itemId]
+      [newCount, fullyPurchased, req.user.id, req.params.itemId]
     );
     res.json({ success: true, item: updated });
   } catch (err) {

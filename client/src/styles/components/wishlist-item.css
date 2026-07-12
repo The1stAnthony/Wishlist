@@ -76,3 +76,43 @@
   text-decoration: line-through;
   color: var(--color-text-muted);
 }
+
+/* ── Shopping mode self-purchase row ──────────────────────────────────────── */
+.wishlist-item-self-purchase {
+  @apply flex items-center gap-2 mt-2;
+}
+
+.wishlist-item-qty-row {
+  @apply flex items-center gap-1;
+}
+
+.wishlist-item-qty-btn {
+  @apply w-6 h-6 rounded-md text-sm font-bold flex items-center justify-center transition-all;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.wishlist-item-qty-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.wishlist-item-qty-val {
+  @apply w-6 text-center text-sm font-semibold;
+  color: var(--color-text);
+}
+
+.wishlist-item-self-buy {
+  @apply px-3 py-1 rounded-lg text-xs font-semibold transition-all;
+  background-color: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #6EE7B7;
+  cursor: pointer;
+}
+
+.wishlist-item-self-buy:hover {
+  background-color: #A7F3D0;
+  border-color: #34D399;
+}

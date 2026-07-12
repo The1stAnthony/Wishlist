@@ -226,17 +226,18 @@
 }
 
 .search-amazon-fallback-btn {
-  @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all;
+  @apply inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all;
   background-color: #FF9900;
   color: white;
   text-decoration: none;
+  font-size: 1rem;
+  box-shadow: 0 4px 16px rgba(255,153,0,0.35);
 }
 
-.search-amazon-fallback-btn.secondary { background-color: #0071DC; }
-
 .search-amazon-fallback-btn:hover {
-  filter: brightness(0.9);
-  transform: translateY(-1px);
+  filter: brightness(0.92);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255,153,0,0.45);
 }
 
 /* ── Add-to-wishlist modal ────────────────────────────────────────────────── */
