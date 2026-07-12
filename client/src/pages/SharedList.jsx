@@ -30,7 +30,7 @@ export default function SharedList() {
       setData((prev) => ({
         ...prev,
         items: prev.items.map((i) =>
-          i.id === itemId ? { ...i, is_purchased: 1 } : i
+          i.id === itemId ? { ...i, is_purchased: true } : i
         ),
       }));
     } catch (err) {

@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import '../styles/pages/profile.css';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const [form, setForm] = useState({
     name:           '',
@@ -58,7 +58,8 @@ export default function Profile() {
     setSuccess(false);
 
     try {
-      await axios.patch('/api/auth/profile', form);
+      const res = await axios.patch('/api/auth/profile', form);
+      updateUser(res.data.user);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {

@@ -56,8 +56,13 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  // Call this after a profile update so the navbar and other consumers see fresh data
+  function updateUser(updatedUser) {
+    setUser(updatedUser);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, register, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

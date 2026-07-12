@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import AdBanner from '../components/AdBanner';
 import WishlistItem from '../components/WishlistItem';
 import '../styles/pages/wishlist.css';
@@ -12,6 +13,7 @@ const EMPTY_FORM = {
 export default function Wishlist() {
   const { id }   = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [wishlist, setWishlist] = useState(null);
   const [items,    setItems]    = useState([]);
@@ -144,7 +146,7 @@ export default function Wishlist() {
             id="use_real_name"
             type="checkbox"
             style={{ marginTop: '0.2rem', accentColor: 'var(--color-primary)', width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }}
-            checked={wishlist?.use_real_name !== 0}
+            checked={Boolean(wishlist?.use_real_name)}
             onChange={async (e) => {
               const newVal = e.target.checked;
               try {
@@ -162,7 +164,7 @@ export default function Wishlist() {
               👤 Show my real name on this list
             </p>
             <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-              {wishlist?.use_real_name !== 0
+              {Boolean(wishlist?.use_real_name)
                 ? 'Your full name is shown — great for sharing with family and close friends.'
                 : 'Your display name / alias is shown instead — better for public sharing or social media.'}
             </p>
@@ -203,7 +205,7 @@ export default function Wishlist() {
                 ? 'Your saved address will be visible on the shared list. Gifters can ship gifts straight to you.'
                 : 'Off — your address is hidden. Gifters can still buy from your list to give in person or use a gift note.'}
             </p>
-            {wishlist?.share_address && !Boolean(wishlist?.street_address) && (
+            {wishlist?.share_address && !user?.street_address && (
               <p style={{ fontSize: '0.75rem', color: '#D97706', marginTop: '0.35rem', fontWeight: 500 }}>
                 ⚠️ No address saved yet —{' '}
                 <Link to="/profile" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>

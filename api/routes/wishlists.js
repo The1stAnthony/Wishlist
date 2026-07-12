@@ -1,7 +1,8 @@
 const express     = require('express');
 const { v4: uuid } = require('uuid');
 const { query, queryOne } = require('../../lib/db');
-const requireAuth = require('../middleware/auth');
+const requireAuth  = require('../middleware/auth');
+const optionalAuth = require('../middleware/optionalAuth');
 
 const router = express.Router();
 
@@ -270,16 +271,29 @@ router.delete('/items/:itemId', requireAuth, async (req, res) => {
 });
 
 // ── POST /api/wishlists/items/:itemId/purchase ──────────────────────────────
+// Public endpoint — anonymous gifters can mark items purchased on public lists.
+// If the caller is authenticated, we record who bought it.
 
-router.post('/items/:itemId/purchase', requireAuth, async (req, res) => {
+router.post('/items/:itemId/purchase', optionalAuth, async (req, res) => {
   try {
-    const item = await queryOne('SELECT * FROM wishlist_items WHERE id = $1', [req.params.itemId]);
-    if (!item)           return res.status(404).json({ error: 'Item not found' });
+    const item = await queryOne(
+      `SELECT i.*, w.is_public FROM wishlist_items i
+       JOIN wishlists w ON w.id = i.wishlist_id
+       WHERE i.id = $1`,
+      [req.params.itemId]
+    );
+    if (!item) return res.status(404).json({ error: 'Item not found' });
+
+    // Anonymous users can only interact with public wishlists
+    if (!req.user && !item.is_public) {
+      return res.status(403).json({ error: 'Sign in to purchase from private wishlists' });
+    }
+
     if (item.is_purchased) return res.status(409).json({ error: 'Item already purchased' });
 
     await query(
       'UPDATE wishlist_items SET is_purchased = TRUE, purchased_by = $1 WHERE id = $2',
-      [req.user.id, req.params.itemId]
+      [req.user?.id || null, req.params.itemId]
     );
     res.json({ success: true });
   } catch (err) {

@@ -13,18 +13,29 @@ const CATEGORIES = [
   { id: 'food',       label: 'Food & Drink',       icon: '🍫', terms: ['chocolate box', 'wine gift set', 'gourmet popcorn', 'tea collection'] },
 ];
 
+// Returns the approved affiliate tag, or null if not yet set.
+// Links work either way — we just don't earn commission until approved.
+function getTag() {
+  const tag = process.env.AMAZON_AFFILIATE_TAG;
+  // Treat the placeholder value as "not set"
+  if (!tag || tag === 'alliwant-20') return null;
+  return tag;
+}
+
 function buildAmazonUrl(term) {
-  const tag   = process.env.AMAZON_AFFILIATE_TAG || 'alliwant-20';
-  const query = encodeURIComponent(term.trim());
-  return `https://www.amazon.com/s?k=${query}&tag=${tag}`;
+  const encodedTerm = encodeURIComponent(term.trim());
+  const tag = getTag();
+  const tagParam = tag ? `&tag=${tag}` : '';
+  return `https://www.amazon.com/s?k=${encodedTerm}${tagParam}`;
 }
 
 function injectAffiliateTag(url) {
-  const tag = process.env.AMAZON_AFFILIATE_TAG || 'alliwant-20';
+  const tag = getTag();
   try {
     const parsed = new URL(url);
     if (!parsed.hostname.includes('amazon.com')) return url;
-    parsed.searchParams.set('tag', tag);
+    // Only inject the tag when we have an approved one
+    if (tag) parsed.searchParams.set('tag', tag);
     return parsed.toString();
   } catch {
     return url;

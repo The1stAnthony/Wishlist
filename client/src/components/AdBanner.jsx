@@ -1,45 +1,48 @@
+import { useEffect } from 'react';
 import '../styles/components/ad-banner.css';
 
+const PUBLISHER_ID = 'ca-pub-5976607298154940';
+
 /**
- * Renders an ad slot.
- *
- * In development (or before AdSense is approved), it shows a styled placeholder
- * so the layout looks correct. Once you have an AdSense publisher ID, swap the
- * placeholder for a real <ins class="adsbygoogle"> element.
+ * Renders a Google AdSense ad unit.
+ * - Dev: shows a styled placeholder so the layout is visible during development.
+ * - Prod: renders a real <ins> tag and pushes it to AdSense.
  *
  * Props:
- *   slot     — AdSense ad slot ID (optional, from your AdSense dashboard)
- *   format   — 'sidebar' (300×250 or 300×600) | 'horizontal' (728×90)
+ *   slot   — AdSense ad unit slot ID (from AdSense dashboard → Ad units)
+ *   format — 'sidebar' (300×250) | 'horizontal' (728×90)
  */
 export default function AdBanner({ slot, format = 'sidebar' }) {
   const isDev = import.meta.env.DEV;
 
+  useEffect(() => {
+    if (!isDev && slot) {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {}
+    }
+  }, [isDev, slot]);
+
   if (format === 'horizontal') {
     return (
       <div className="ad-banner-horizontal">
-        {isDev ? (
-          <div className="ad-content">
+        <div className="ad-content">
+          {isDev || !slot ? (
             <div className="ad-placeholder">
               <div className="ad-placeholder-icon">📣</div>
-              <p className="ad-placeholder-text">
-                Advertisement<br />728 × 90
-              </p>
+              <p className="ad-placeholder-text">Advertisement · 728×90</p>
             </div>
-          </div>
-        ) : (
-          /*
-            Replace this with your actual AdSense tag once approved.
-            Example:
-            <ins className="adsbygoogle"
+          ) : (
+            <ins
+              className="adsbygoogle"
               style={{ display: 'block' }}
-              data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+              data-ad-client={PUBLISHER_ID}
               data-ad-slot={slot}
               data-ad-format="auto"
               data-full-width-responsive="true"
             />
-          */
-          <div className="ad-content" />
-        )}
+          )}
+        </div>
       </div>
     );
   }
@@ -49,24 +52,18 @@ export default function AdBanner({ slot, format = 'sidebar' }) {
     <div className="ad-slot">
       <div className="ad-label">Advertisement</div>
       <div className="ad-content">
-        {isDev ? (
+        {isDev || !slot ? (
           <div className="ad-placeholder">
             <div className="ad-placeholder-icon">📣</div>
-            <p className="ad-placeholder-text">
-              Ad space<br />300 × 250<br /><br />
-              Configure AdSense in<br /><code>.env</code>
-            </p>
+            <p className="ad-placeholder-text">Ad space · 300×250</p>
           </div>
         ) : (
-          /*
-            Replace with your real AdSense unit tag.
-            <ins className="adsbygoogle"
-              style={{ display: 'block', width: '300px', height: '250px' }}
-              data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-              data-ad-slot={slot}
-            />
-          */
-          <div />
+          <ins
+            className="adsbygoogle"
+            style={{ display: 'block', width: '300px', height: '250px' }}
+            data-ad-client={PUBLISHER_ID}
+            data-ad-slot={slot}
+          />
         )}
       </div>
     </div>
