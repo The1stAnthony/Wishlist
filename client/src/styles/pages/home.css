@@ -119,6 +119,112 @@
   color: var(--color-text-muted);
 }
 
+/* ── Hero trust bar ───────────────────────────────────────────────────────── */
+.hero-trust {
+  @apply flex flex-wrap items-center justify-center gap-3 mt-8 text-sm;
+  color: var(--color-text-muted);
+}
+
+/* ── Creator section ──────────────────────────────────────────────────────── */
+.creator-section {
+  @apply py-20 px-6;
+  background-color: var(--color-surface);
+}
+
+.creator-inner {
+  @apply max-w-5xl mx-auto grid gap-12 items-center;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .creator-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.creator-list {
+  @apply flex flex-col gap-3 list-none;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.creator-card-preview {
+  @apply rounded-2xl p-5 flex flex-col gap-3;
+  background: linear-gradient(135deg, #EDE9FE 0%, #FAF9FF 100%);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.creator-preview-header {
+  @apply flex items-center gap-3 pb-3;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.creator-preview-avatar {
+  @apply w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.creator-preview-items {
+  @apply flex flex-col gap-2;
+}
+
+.creator-preview-item {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-xl;
+  background-color: var(--color-surface);
+}
+
+.creator-preview-dot {
+  @apply w-3 h-3 rounded-full flex-shrink-0;
+  background-color: var(--color-primary);
+  opacity: 0.3;
+}
+
+.creator-preview-dot.done {
+  background-color: #10B981;
+  opacity: 1;
+}
+
+/* ── FAQ section ──────────────────────────────────────────────────────────── */
+.faq-section {
+  @apply py-20 px-6;
+  background-color: var(--color-background);
+}
+
+.faq-inner {
+  @apply max-w-4xl mx-auto;
+}
+
+.faq-grid {
+  @apply grid gap-4;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 640px) {
+  .faq-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.faq-card {
+  @apply p-5 rounded-2xl;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.faq-q {
+  @apply text-sm font-semibold mb-2;
+  color: var(--color-text);
+}
+
+.faq-a {
+  @apply text-sm;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+}
+
 /* ── CTA section ──────────────────────────────────────────────────────────── */
 .cta-section {
   @apply py-20 px-6 text-center;
