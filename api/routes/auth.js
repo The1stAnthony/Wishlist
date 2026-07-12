@@ -1,0 +1,132 @@
+const express     = require('express');
+const bcrypt      = require('bcryptjs');
+const jwt         = require('jsonwebtoken');
+const { query, queryOne } = require('../../lib/db');
+const requireAuth = require('../middleware/auth');
+
+const router = express.Router();
+
+// Columns safe to return to the client — never includes password
+const PUBLIC_FIELDS = 'id, name, display_name, email, birthday, avatar_url, created_at';
+
+// Owner's profile fetch also includes the private address fields
+const OWNER_FIELDS  = `${PUBLIC_FIELDS}, street_address, city, state, zip_code, country`;
+
+function createToken(user) {
+  return jwt.sign(
+    { id: user.id, name: user.name, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
+
+// ── POST /api/auth/register ─────────────────────────────────────────────────
+
+router.post('/register', async (req, res) => {
+  const { name, display_name, email, password, birthday } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Name, email, and password are required' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+
+  try {
+    const existing = await queryOne('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    if (existing) {
+      return res.status(409).json({ error: 'An account with that email already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const inserted = await queryOne(
+      `INSERT INTO users (name, display_name, email, password, birthday)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [name, display_name?.trim() || null, email.toLowerCase().trim(), hashedPassword, birthday || null]
+    );
+
+    const user = await queryOne(`SELECT ${PUBLIC_FIELDS} FROM users WHERE id = $1`, [inserted.id]);
+
+    res.status(201).json({ user, token: createToken(user) });
+  } catch (err) {
+    console.error('Register error:', err);
+    res.status(500).json({ error: 'Could not create account' });
+  }
+});
+
+// ── POST /api/auth/login ────────────────────────────────────────────────────
+
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  try {
+    const user = await queryOne(
+      `SELECT ${PUBLIC_FIELDS}, password FROM users WHERE email = $1`,
+      [email.toLowerCase().trim()]
+    );
+
+    // Generic error — don't reveal whether the email exists
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const { password: _pw, ...safeUser } = user;
+    res.json({ user: safeUser, token: createToken(safeUser) });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// ── GET /api/auth/me ────────────────────────────────────────────────────────
+
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    const user = await queryOne(`SELECT ${OWNER_FIELDS} FROM users WHERE id = $1`, [req.user.id]);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ user });
+  } catch (err) {
+    console.error('Get profile error:', err);
+    res.status(500).json({ error: 'Could not fetch profile' });
+  }
+});
+
+// ── PATCH /api/auth/profile ─────────────────────────────────────────────────
+
+router.patch('/profile', requireAuth, async (req, res) => {
+  const { name, display_name, birthday, street_address, city, state, zip_code, country } = req.body;
+
+  try {
+    await query(
+      `UPDATE users
+       SET name = $1, display_name = $2, birthday = $3,
+           street_address = $4, city = $5, state = $6, zip_code = $7, country = $8
+       WHERE id = $9`,
+      [
+        name,
+        display_name?.trim() || null,
+        birthday       || null,
+        street_address || null,
+        city           || null,
+        state          || null,
+        zip_code       || null,
+        country        || 'US',
+        req.user.id,
+      ]
+    );
+
+    const updated = await queryOne(`SELECT ${OWNER_FIELDS} FROM users WHERE id = $1`, [req.user.id]);
+    res.json({ user: updated });
+  } catch (err) {
+    console.error('Update profile error:', err);
+    res.status(500).json({ error: 'Could not update profile' });
+  }
+});
+
+module.exports = router;
