@@ -44,7 +44,7 @@ export default function SharedList() {
           <p style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎁</p>
           <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{error}</p>
           <Link to="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>
-            Go to AlliWant
+            Go to All I Want
           </Link>
         </div>
       </div>
@@ -158,7 +158,7 @@ export default function SharedList() {
             🎂 Want your own birthday wishlist?
           </p>
           <p style={{ opacity: 0.85, marginBottom: '1rem', fontSize: '0.9rem' }}>
-            Create yours on AlliWant — free forever.
+            Create yours on All I Want — free forever.
           </p>
           <Link to="/register" style={{
             display: 'inline-block',

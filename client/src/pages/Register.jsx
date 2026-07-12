@@ -61,7 +61,7 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">All<span style={{ color: '#111827' }}> i</span><span>Want</span> 🎂</div>
+        <div className="auth-logo">All<span style={{ color: '#111827' }}> I </span><span>Want</span> 🎂</div>
 
         <h1 className="auth-title">Create your wishlist</h1>
         <p className="auth-subtitle">Free forever — no credit card needed</p>

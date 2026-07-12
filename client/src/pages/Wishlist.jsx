@@ -45,7 +45,7 @@ export default function Wishlist() {
     setSaving(true);
 
     try {
-      // If the URL is an Amazon link, ask the server to tag it with our affiliate ID
+      // if the URL is an Amazon link, ask the server to tag it with our affiliate ID
       let affiliateUrl = '';
       if (form.url && form.url.includes('amazon.com')) {
         const tagRes = await axios.post('/api/search/tag-url', { url: form.url });

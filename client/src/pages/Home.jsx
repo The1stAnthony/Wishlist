@@ -17,7 +17,7 @@ const STEPS = [
 
 const FAQS = [
   {
-    q: 'Is AllIWant free to use?',
+    q: 'Is All I Want free to use?',
     a: 'Yes, completely free. Create wishlists, share them, and track birthdays at no cost.',
   },
   {
@@ -34,7 +34,7 @@ const FAQS = [
   },
   {
     q: 'How is this different from an Amazon wishlist?',
-    a: 'AllIWant works across every store, not just Amazon. You also get birthday reminders, privacy controls, and a shareable link that doesn\'t expose your address.',
+    a: 'All I Want works across every store, not just Amazon. You also get birthday reminders, privacy controls, and a shareable link that doesn\'t expose your address.',
   },
   {
     q: 'Is my address kept private?',
@@ -88,7 +88,7 @@ export default function Home() {
         <div className="how-it-works-inner">
           <p className="section-subtitle" style={{ textAlign: 'center' }}>SIMPLE AS 1-2-3</p>
           <h2 className="section-title" style={{ textAlign: 'center' }}>
-            How <span style={{ color: 'var(--color-primary)' }}>All</span><span style={{ color: '#111827' }}> i</span><span style={{ color: 'var(--color-accent)' }}>Want</span> works
+            How <span style={{ color: 'var(--color-primary)' }}>All</span><span style={{ color: '#111827' }}> I </span><span style={{ color: 'var(--color-accent)' }}>Want</span> works
           </h2>
           <div className="steps-grid">
             {STEPS.map((step) => (

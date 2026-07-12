@@ -300,7 +300,7 @@ export default function Birthdays() {
               </div>
 
               <div>
-                <label className="form-label">Their AllIWant wishlist URL (optional)</label>
+                <label className="form-label">Their All I Want wishlist URL (optional)</label>
                 <input
                   name="wishlist_url"
                   type="url"

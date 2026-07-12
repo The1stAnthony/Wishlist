@@ -9,12 +9,12 @@ export default function Footer() {
       <div className="footer-inner">
         {/* Brand + affiliate disclosure */}
         <div>
-          <div className="footer-brand">All<span style={{ color: '#111827' }}> i</span><span>Want</span> 🎂</div>
+          <div className="footer-brand">All<span style={{ color: '#111827' }}> I </span><span>Want</span> 🎂</div>
           <p className="footer-tagline">
             Share your wishlist. Get gifts you actually love.
           </p>
           <p className="footer-affiliate-notice">
-            AlliWant participates in the Amazon Services LLC Associates Program,
+            All I Want participates in the Amazon Services LLC Associates Program,
             an affiliate advertising program designed to provide a means for
             sites to earn advertising fees by advertising and linking to Amazon.com.
           </p>
@@ -67,7 +67,7 @@ export default function Footer() {
       </div>
 
       <div className="footer-bottom">
-        <span>© {year} AlliWant. All rights reserved.</span>
+        <span>© {year} All I Want. All rights reserved.</span>
         <span>Made with 🎂 for birthday lovers</span>
       </div>
     </footer>
