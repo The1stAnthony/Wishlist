@@ -37,8 +37,8 @@ router.post('/', requireAuth, async (req, res) => {
   try {
     const wishlist = await queryOne(
       `INSERT INTO wishlists
-         (user_id, title, description, event_date, is_public, share_address, use_real_name, share_token)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         (user_id, title, description, event_date, is_public, share_address, use_real_name, spoiler_free, share_token)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         req.user.id,
@@ -48,6 +48,7 @@ router.post('/', requireAuth, async (req, res) => {
         is_public     !== undefined ? Boolean(is_public)     : true,
         share_address !== undefined ? Boolean(share_address) : false,
         use_real_name !== undefined ? Boolean(use_real_name) : true,
+        true, // No Spoilers mode on by default
         shareToken,
       ]
     );

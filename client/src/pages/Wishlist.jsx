@@ -291,12 +291,12 @@ export default function Wishlist() {
           />
           <label htmlFor="spoiler_free" style={{ cursor: 'pointer', flex: 1 }}>
             <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text)' }}>
-              {wishlist?.spoiler_free ? '🎂 Surprise mode is ON' : '🛒 Shopping mode is ON'}
+              {wishlist?.spoiler_free ? '🎂 No Spoilers mode is ON' : '🛒 Shopping mode is ON'}
             </p>
             <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
               {Boolean(wishlist?.spoiler_free)
                 ? 'Your full list is shown with no purchase info — you\'ll be surprised on your birthday. Uncheck to switch to shopping mode.'
-                : 'Showing items you still need. You can see how many are left and mark things you\'ve bought yourself. Check to switch to surprise mode.'}
+                : 'Showing items you still need. You can see how many are left and mark things you\'ve bought yourself. Check to switch to No Spoilers mode.'}
             </p>
           </label>
         </div>
@@ -308,7 +308,7 @@ export default function Wishlist() {
             background: '#FFFBEB', border: '1px solid #FCD34D',
             fontSize: '0.8rem', color: '#92400E',
           }}>
-            🎂 <strong>Surprise mode:</strong> All purchase activity is hidden from you — your friends and family still see what's been claimed. You'll be surprised on the big day.
+            🎂 <strong>No Spoilers mode:</strong> All purchase activity is hidden from you — your friends and family still see what's been claimed. You'll be surprised on the big day.
           </div>
         )}
 
