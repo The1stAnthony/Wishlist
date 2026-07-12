@@ -106,7 +106,7 @@ export default function Home() {
       <section className="features">
         <div className="features-inner">
           <p className="section-subtitle">EVERYTHING YOU NEED</p>
-          <h2 className="section-title">Built for birthday people</h2>
+          <h2 className="section-title">Built for everyone who has a birthday</h2>
           <div className="features-grid">
             {FEATURES.map((f) => (
               <div key={f.title} className="feature-card">
@@ -188,7 +188,7 @@ export default function Home() {
       {/* ── CTA ───────────────────────────────────────────────────────────── */}
       <section className="cta-section">
         <h2 className="cta-title">
-          {user ? 'Ready for your best birthday yet?' : 'Built for birthday people. And their fans.'}
+          {user ? 'Ready for your best birthday yet?' : 'Built for everyone who has a birthday. And their fans.'}
         </h2>
         <p className="cta-subtitle">
           {user

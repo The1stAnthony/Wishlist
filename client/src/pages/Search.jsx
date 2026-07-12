@@ -49,6 +49,9 @@ export default function Search() {
 
   return (
     <div>
+      {/* ── Top banner ad ───────────────────────────────────────────────── */}
+      <AdBanner format="horizontal" />
+
       {/* ── Search hero ─────────────────────────────────────────────────── */}
       <div className="search-hero">
         <h1 className="search-hero-title">🔍 Find the perfect gift</h1>
@@ -126,8 +129,8 @@ export default function Search() {
           {/* ── Browse categories ──────────────────────────────────────── */}
           {categories.length > 0 && (
             <div style={{ marginTop: results ? '2rem' : '0' }}>
-              <p className="section-subtitle">BROWSE BY CATEGORY</p>
-              <h2 className="section-title" style={{ fontSize: '1.25rem' }}>
+              <p className="section-subtitle" style={{ textAlign: 'center' }}>BROWSE BY CATEGORY</p>
+              <h2 className="section-title" style={{ fontSize: '1.25rem', textAlign: 'center' }}>
                 What kind of gift are you looking for?
               </h2>
 
@@ -173,6 +176,8 @@ export default function Search() {
 
         {/* ── Sidebar ads ───────────────────────────────────────────────── */}
         <aside className="sidebar-ads ad-sidebar">
+          <AdBanner format="sidebar" />
+          <AdBanner format="sidebar" />
           <AdBanner format="sidebar" />
           <AdBanner format="sidebar" />
         </aside>
