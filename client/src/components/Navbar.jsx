@@ -36,6 +36,7 @@ export default function Navbar() {
         {/* Brand */}
         <Link to="/" className="navbar-brand" onClick={closeMenu}>
           All<span style={{ color: '#111827' }}> I </span><span>Want</span> 🎂
+          <span className="alpha-badge">ALPHA</span>
         </Link>
 
         {/* Desktop nav links */}
@@ -96,6 +97,7 @@ export default function Navbar() {
         <div className="mobile-drawer-header">
           <Link to="/" className="navbar-brand" onClick={closeMenu}>
             All<span style={{ color: '#111827' }}> I </span><span>Want</span> 🎂
+            <span className="alpha-badge">ALPHA</span>
           </Link>
           <button className="mobile-close" onClick={closeMenu} aria-label="Close menu">✕</button>
         </div>

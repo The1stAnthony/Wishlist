@@ -16,6 +16,16 @@
   color: var(--color-accent);
 }
 
+.alpha-badge {
+  @apply inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ml-1.5;
+  background-color: #FEF3C7;
+  color: #92400E;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+  border: 1px solid #FCD34D;
+}
+
 .navbar-nav {
   @apply hidden md:flex items-center gap-1;
 }
