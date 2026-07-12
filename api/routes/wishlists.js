@@ -28,27 +28,30 @@ router.get('/my', requireAuth, async (req, res) => {
 // ── POST /api/wishlists ─────────────────────────────────────────────────────
 
 router.post('/', requireAuth, async (req, res) => {
-  const { title, description, event_date, is_public, share_address, use_real_name } = req.body;
+  const { title, description, event_date, is_public, share_address, use_real_name, visibility } = req.body;
 
   if (!title) return res.status(400).json({ error: 'A title is required' });
 
   const shareToken = uuid().replace(/-/g, '').slice(0, 16);
+  const effectiveVisibility = visibility || 'public';
+  const effectiveIsPublic   = effectiveVisibility === 'public';
 
   try {
     const wishlist = await queryOne(
       `INSERT INTO wishlists
-         (user_id, title, description, event_date, is_public, share_address, use_real_name, spoiler_free, share_token)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         (user_id, title, description, event_date, is_public, share_address, use_real_name, spoiler_free, visibility, share_token)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         req.user.id,
         title,
         description    || null,
         event_date     || null,
-        is_public     !== undefined ? Boolean(is_public)     : true,
+        effectiveIsPublic,
         share_address !== undefined ? Boolean(share_address) : false,
         use_real_name !== undefined ? Boolean(use_real_name) : true,
         true, // No Spoilers mode on by default
+        effectiveVisibility,
         shareToken,
       ]
     );
@@ -161,7 +164,10 @@ router.get('/:id', requireAuth, async (req, res) => {
 // ── PATCH /api/wishlists/:id ────────────────────────────────────────────────
 
 router.patch('/:id', requireAuth, async (req, res) => {
-  const { title, description, event_date, is_public, share_address, use_real_name, spoiler_free } = req.body;
+  const { title, description, event_date, is_public, share_address, use_real_name, spoiler_free, visibility } = req.body;
+
+  const effectiveVisibility = visibility || (is_public === false ? 'friends' : 'public');
+  const effectiveIsPublic   = effectiveVisibility === 'public';
 
   try {
     const existing = await queryOne(
@@ -173,17 +179,18 @@ router.patch('/:id', requireAuth, async (req, res) => {
     const wishlist = await queryOne(
       `UPDATE wishlists
        SET title = $1, description = $2, event_date = $3,
-           is_public = $4, share_address = $5, use_real_name = $6, spoiler_free = $7
-       WHERE id = $8
+           is_public = $4, share_address = $5, use_real_name = $6, spoiler_free = $7, visibility = $8
+       WHERE id = $9
        RETURNING *`,
       [
         title,
         description    || null,
         event_date     || null,
-        Boolean(is_public),
+        effectiveIsPublic,
         Boolean(share_address),
         use_real_name !== undefined ? Boolean(use_real_name) : true,
         spoiler_free  !== undefined ? Boolean(spoiler_free)  : false,
+        effectiveVisibility,
         req.params.id,
       ]
     );

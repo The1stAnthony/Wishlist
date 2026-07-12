@@ -395,8 +395,7 @@ export default function Profile() {
             </p>
             <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', maxWidth: 380 }}>
               Enable to get a public profile page, appear in search, and build a following.
-              Requires a display name / handle. When enabled, <strong>@The_1st_Anthony</strong> becomes
-              your first follower and you follow them back automatically.
+              Requires a display name / handle.
             </p>
           </div>
           <button

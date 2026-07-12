@@ -6,13 +6,15 @@ import Footer      from './components/Footer';
 import Home        from './pages/Home';
 import Login       from './pages/Login';
 import Register    from './pages/Register';
-import Dashboard   from './pages/Dashboard';
-import Wishlist    from './pages/Wishlist';
-import SharedList  from './pages/SharedList';
-import Search      from './pages/Search';
-import Birthdays   from './pages/Birthdays';
-import Profile     from './pages/Profile';
-import Friends     from './pages/Friends';
+import Dashboard     from './pages/Dashboard';
+import Wishlist      from './pages/Wishlist';
+import SharedList    from './pages/SharedList';
+import Search        from './pages/Search';
+import Birthdays     from './pages/Birthdays';
+import Profile       from './pages/Profile';
+import Friends       from './pages/Friends';
+import PublicProfile from './pages/PublicProfile';
+import FriendAccept  from './pages/FriendAccept';
 
 /**
  * Redirects unauthenticated users to /login.
@@ -37,10 +39,12 @@ export default function App() {
       <main className="main-content">
         <Routes>
           {/* Public routes */}
-          <Route path="/"              element={<Home />} />
-          <Route path="/login"         element={<Login />} />
-          <Route path="/register"      element={<Register />} />
-          <Route path="/list/:token"   element={<SharedList />} />
+          <Route path="/"                     element={<Home />} />
+          <Route path="/login"                element={<Login />} />
+          <Route path="/register"             element={<Register />} />
+          <Route path="/list/:token"          element={<SharedList />} />
+          <Route path="/u/:handle"            element={<PublicProfile />} />
+          <Route path="/friends/join/:token"  element={<FriendAccept />} />
 
           {/* Protected routes */}
           <Route path="/dashboard"     element={<PrivateRoute><Dashboard /></PrivateRoute>} />

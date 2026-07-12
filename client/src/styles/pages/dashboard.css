@@ -16,51 +16,106 @@
   color: var(--color-text-muted);
 }
 
-/* ── Upcoming birthdays strip ─────────────────────────────────────────────── */
-.upcoming-section {
-  @apply mb-10;
+/* ── Section headers + wrappers ───────────────────────────────────────────── */
+.dashboard-section {
+  @apply p-5 rounded-2xl;
+  border: 1.5px solid var(--color-border);
+  background-color: var(--color-surface);
 }
 
-.upcoming-scroll {
-  @apply flex gap-4 overflow-x-auto pb-2;
-  scrollbar-width: none; /* hide scrollbar on Firefox */
+.dashboard-section--mine {
+  border-color: var(--color-primary-light);
+  background: linear-gradient(135deg, #FAF9FF, var(--color-surface));
 }
 
-.upcoming-scroll::-webkit-scrollbar {
-  display: none;
+.dashboard-section-header {
+  @apply flex items-center justify-between mb-1;
 }
 
-.birthday-chip {
-  @apply flex-shrink-0 flex flex-col items-center text-center p-4 rounded-2xl cursor-pointer transition-all;
+/* ── Upcoming events scroll row ───────────────────────────────────────────── */
+.event-scroll {
+  @apply flex gap-3 overflow-x-auto pb-2 pt-1;
+  scrollbar-width: none;
+}
+
+.event-scroll::-webkit-scrollbar { display: none; }
+
+.scroll-arrow {
+  @apply w-7 h-7 rounded-lg text-base font-bold transition-all flex items-center justify-center flex-shrink-0;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  width: 110px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.scroll-arrow:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ── Upcoming event card ──────────────────────────────────────────────────── */
+.event-card {
+  @apply flex-shrink-0 rounded-2xl overflow-hidden transition-all cursor-pointer;
+  width: 152px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   box-shadow: var(--shadow-card);
 }
 
-.birthday-chip:hover {
+.event-card:hover {
   border-color: var(--color-primary-light);
   box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
 }
 
-.birthday-chip-avatar {
-  @apply w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold text-white mb-2;
-  background-color: var(--color-primary);
+.event-card-image {
+  @apply w-full object-cover;
+  height: 96px;
 }
 
-.birthday-chip-name {
-  @apply text-xs font-semibold truncate w-full;
+.event-card-placeholder {
+  @apply w-full flex items-center justify-center;
+  height: 96px;
+}
+
+.event-card-placeholder span {
+  @apply text-3xl font-bold;
+  color: rgba(255,255,255,0.85);
+}
+
+.event-card-body {
+  @apply p-2.5 flex flex-col gap-1;
+}
+
+.event-card-title {
+  @apply text-xs font-bold leading-tight line-clamp-2;
   color: var(--color-text);
 }
 
-.birthday-chip-days {
-  @apply text-xs mt-0.5;
+.event-card-owner {
+  @apply flex items-center gap-1.5;
+}
+
+.event-card-owner-name {
+  @apply text-xs truncate;
+  color: var(--color-text-muted);
+  max-width: 90px;
+}
+
+.event-days-tag {
+  @apply inline-block text-xs font-semibold px-1.5 py-0.5 rounded-md mt-0.5;
+  background-color: var(--color-background);
   color: var(--color-text-muted);
 }
 
-.birthday-chip-days.soon {
-  color: var(--color-pink);
-  font-weight: 600;
+.event-days-tag--today {
+  background-color: #ECFDF5;
+  color: #065F46;
+}
+
+.event-days-tag--soon {
+  background-color: #FEF3C7;
+  color: #92400E;
 }
 
 /* ── Wishlists grid ───────────────────────────────────────────────────────── */

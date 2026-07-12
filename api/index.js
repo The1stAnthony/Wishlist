@@ -4,12 +4,14 @@ const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 
-const authRoutes     = require('./routes/auth');
-const wishlistRoutes = require('./routes/wishlists');
-const birthdayRoutes = require('./routes/birthdays');
-const searchRoutes   = require('./routes/search');
-const scrapeRoutes   = require('./routes/scrape');
-const followsRoutes  = require('./routes/follows');
+const authRoutes        = require('./routes/auth');
+const wishlistRoutes    = require('./routes/wishlists');
+const birthdayRoutes    = require('./routes/birthdays');
+const searchRoutes      = require('./routes/search');
+const scrapeRoutes      = require('./routes/scrape');
+const followsRoutes     = require('./routes/follows');
+const friendshipsRoutes = require('./routes/friendships');
+const usersRoutes       = require('./routes/users');
 
 const app    = express();
 const isProd = process.env.NODE_ENV === 'production';
@@ -26,12 +28,14 @@ app.use(express.json());
 
 // ── API routes ──────────────────────────────────────────────────────────────
 
-app.use('/api/auth',      authRoutes);
-app.use('/api/wishlists', wishlistRoutes);
-app.use('/api/birthdays', birthdayRoutes);
-app.use('/api/search',    searchRoutes);
-app.use('/api/scrape',    scrapeRoutes);
-app.use('/api/follows',   followsRoutes);
+app.use('/api/auth',         authRoutes);
+app.use('/api/wishlists',    wishlistRoutes);
+app.use('/api/birthdays',    birthdayRoutes);
+app.use('/api/search',       searchRoutes);
+app.use('/api/scrape',       scrapeRoutes);
+app.use('/api/follows',      followsRoutes);
+app.use('/api/friendships',  friendshipsRoutes);
+app.use('/api/users',        usersRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

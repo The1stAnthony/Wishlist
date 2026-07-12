@@ -1,35 +1,173 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import AdBanner from '../components/AdBanner';
 import '../styles/pages/dashboard.css';
 
+const AVATAR_COLORS = ['#7C3AED', '#DC2626', '#2563EB', '#059669', '#D97706', '#DB2777', '#1F2937'];
+
+function hashColor(str) {
+  if (!str) return AVATAR_COLORS[0];
+  return AVATAR_COLORS[str.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length];
+}
+
+function daysUntilDate(dateStr) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr + 'T00:00:00');
+  return Math.ceil((d - today) / 86400000);
+}
+
+function DaysTag({ n }) {
+  if (n === 0) return <span className="event-days-tag event-days-tag--today">🎉 Today!</span>;
+  if (n === 1) return <span className="event-days-tag event-days-tag--soon">Tomorrow</span>;
+  if (n <= 7)  return <span className="event-days-tag event-days-tag--soon">in {n}d</span>;
+  return <span className="event-days-tag">in {n}d</span>;
+}
+
+function MiniAvatar({ name, url, size = 22 }) {
+  const initial = (name || '?').charAt(0).toUpperCase();
+  if (url) return <img src={url} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />;
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', background: hashColor(name),
+      color: '#fff', fontSize: size * 0.42, fontWeight: 700,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    }}>{initial}</div>
+  );
+}
+
+function EventCard({ item }) {
+  const inner = (
+    <div className="event-card">
+      {/* Cover image or colored initial block */}
+      {item.cover_image ? (
+        <img src={item.cover_image} alt={item.title} className="event-card-image" />
+      ) : (
+        <div className="event-card-placeholder" style={{ background: hashColor(item.owner_name || item.title) }}>
+          <span>{(item.owner_name || item.title || '?').charAt(0).toUpperCase()}</span>
+        </div>
+      )}
+
+      <div className="event-card-body">
+        <p className="event-card-title">{item.title}</p>
+        {item.owner_name && (
+          <div className="event-card-owner">
+            <MiniAvatar name={item.owner_name} url={item.owner_avatar} />
+            <span className="event-card-owner-name">{item.owner_name}</span>
+          </div>
+        )}
+        <DaysTag n={item.days_until} />
+      </div>
+    </div>
+  );
+
+  if (!item.link) return inner;
+  if (item.isExternal) return <a href={item.link} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>{inner}</a>;
+  return <Link to={item.link} style={{ textDecoration: 'none' }}>{inner}</Link>;
+}
+
+function WishlistCard({ list, onDelete }) {
+  const navigate = useNavigate();
+  const vis = list.visibility || (list.is_public ? 'public' : 'friends');
+
+  return (
+    <div className="wishlist-card" onClick={() => navigate(`/wishlist/${list.id}`)}>
+      <div>
+        <p className="wishlist-card-title">{list.title}</p>
+        {list.event_date && (
+          <p className="wishlist-card-date">🎂 {new Date(list.event_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
+        )}
+      </div>
+      <div className="wishlist-card-meta">
+        <span className="badge badge-purple">{list.item_count} item{list.item_count !== 1 ? 's' : ''}</span>
+        {vis === 'public'   && <span className="badge badge-green">Public</span>}
+        {vis === 'friends'  && <span className="badge badge-amber">Friends</span>}
+        {vis === 'specific' && <span className="badge">Specific</span>}
+      </div>
+      <div className="wishlist-card-footer">
+        {vis === 'public' && (
+          <Link
+            to={`/list/${list.share_token}`}
+            onClick={(e) => e.stopPropagation()}
+            className="btn-ghost"
+            style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+          >
+            Share link
+          </Link>
+        )}
+        <button
+          className="btn-ghost"
+          style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem', color: '#EF4444', marginLeft: 'auto' }}
+          onClick={(e) => { e.stopPropagation(); onDelete(list.id, list.title); }}
+          title="Delete this wishlist"
+        >
+          🗑 Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user }   = useAuth();
   const navigate   = useNavigate();
 
-  const [wishlists, setWishlists]     = useState([]);
-  const [upcoming,  setUpcoming]      = useState([]);
-  const [showForm,  setShowForm]      = useState(false);
-  const [newList,   setNewList]       = useState({ title: '', event_date: '' });
-  const [creating,  setCreating]      = useState(false);
-  const [loading,   setLoading]       = useState(true);
-  const [error,     setError]         = useState('');
+  const [wishlists,       setWishlists]       = useState([]);
+  const [upcomingBdays,   setUpcomingBdays]   = useState([]);
+  const [networkUpcoming, setNetworkUpcoming] = useState([]);
+  const [creatorFeed,     setCreatorFeed]     = useState([]);
+  const [showForm,        setShowForm]        = useState(false);
+  const [newList,         setNewList]         = useState({ title: '', event_date: '' });
+  const [creating,        setCreating]        = useState(false);
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState('');
 
-  // Load wishlists and upcoming birthdays on mount
+  const scrollRef = useRef(null);
+
   useEffect(() => {
     Promise.all([
       axios.get('/api/wishlists/my'),
       axios.get('/api/birthdays/upcoming'),
-    ])
-      .then(([listRes, bdayRes]) => {
-        setWishlists(listRes.data.wishlists);
-        setUpcoming(bdayRes.data.upcoming);
-      })
-      .catch(() => setError('Failed to load your data. Please refresh.'))
+      axios.get('/api/follows/network-upcoming').catch(() => ({ data: { wishlists: [] } })),
+      axios.get('/api/follows/feed').catch(() => ({ data: { wishlists: [] } })),
+    ]).then(([listRes, bdayRes, netRes, feedRes]) => {
+      setWishlists(listRes.data.wishlists);
+      setUpcomingBdays(bdayRes.data.upcoming);
+      setNetworkUpcoming(netRes.data.wishlists);
+      setCreatorFeed(feedRes.data.wishlists);
+    }).catch(() => setError('Failed to load your dashboard. Please refresh.'))
       .finally(() => setLoading(false));
   }, []);
+
+  // Combine birthday contacts + network wishlists into one sorted upcoming list
+  const allUpcoming = [
+    ...upcomingBdays.map((c) => ({
+      id:         `b-${c.id}`,
+      type:       'birthday',
+      title:      c.contact_name,
+      days_until: c.days_until,
+      link:       c.wishlist_url || null,
+      isExternal: true,
+      cover_image:  null,
+      owner_name:   null,
+      owner_avatar: null,
+    })),
+    ...networkUpcoming
+      .map((w) => ({
+        id:         `w-${w.id}`,
+        type:       'wishlist',
+        title:      w.title,
+        days_until: daysUntilDate(w.event_date),
+        link:       `/list/${w.share_token}`,
+        isExternal: false,
+        cover_image:  w.cover_image,
+        owner_name:   w.display_name || w.owner_name,
+        owner_avatar: w.owner_avatar,
+      }))
+      .filter((w) => w.days_until >= 0 && w.days_until <= 90),
+  ].sort((a, b) => a.days_until - b.days_until).slice(0, 15);
 
   async function createWishlist(e) {
     e.preventDefault();
@@ -58,11 +196,8 @@ export default function Dashboard() {
     }
   }
 
-  // Format a date like "July 15"
-  function formatDate(dateStr) {
-    if (!dateStr) return null;
-    const [, month, day] = dateStr.split('-');
-    return new Date(0, Number(month) - 1, Number(day)).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  function scrollEvents(dir) {
+    scrollRef.current?.scrollBy({ left: dir * 180, behavior: 'smooth' });
   }
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -71,141 +206,155 @@ export default function Dashboard() {
 
   return (
     <div className="page-with-sidebar">
-      {/* ── Main content ──────────────────────────────────────────────────── */}
       <div>
+        {/* ── Greeting ──────────────────────────────────────────────────────── */}
         <div className="dashboard-header">
           <h1 className="dashboard-greeting">
-            Hey, <span>{user?.name?.split(' ')[0]}</span> 👋
+            Hey, <span>{user?.display_name || user?.name?.split(' ')[0]}</span> 👋
           </h1>
           <p className="dashboard-date">{today}</p>
         </div>
 
         {error && <p className="auth-error" style={{ marginBottom: '1rem' }}>{error}</p>}
 
-        {/* ── Upcoming birthdays strip ─────────────────────────────────── */}
-        {upcoming.length > 0 && (
-          <section className="upcoming-section">
-            <h2 className="section-title" style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>
-              🎂 Upcoming birthdays
-            </h2>
-            <div className="upcoming-scroll">
-              {upcoming.map((contact) => (
-                <div key={contact.id} className="birthday-chip">
-                  <div className="birthday-chip-avatar">
-                    {contact.contact_name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="birthday-chip-name">{contact.contact_name.split(' ')[0]}</span>
-                  <span className={`birthday-chip-days ${contact.days_until <= 7 ? 'soon' : ''}`}>
-                    {contact.days_until === 0
-                      ? '🎉 Today!'
-                      : contact.days_until === 1
-                        ? 'Tomorrow'
-                        : `in ${contact.days_until}d`}
-                  </span>
-                </div>
-              ))}
+        {/* ── Upcoming Birthdays / Events ───────────────────────────────────── */}
+        {allUpcoming.length > 0 && (
+          <section className="dashboard-section" style={{ marginBottom: '2rem', border: 'none', padding: 0 }}>
+            <div className="dashboard-section-header">
+              <h2 className="section-title">🎂 Upcoming Birthdays / Events</h2>
+              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                <button className="scroll-arrow" onClick={() => scrollEvents(-1)} aria-label="Scroll left">‹</button>
+                <button className="scroll-arrow" onClick={() => scrollEvents(1)} aria-label="Scroll right">›</button>
+              </div>
+            </div>
+            <div className="event-scroll" ref={scrollRef}>
+              {allUpcoming.map((item) => <EventCard key={item.id} item={item} />)}
             </div>
           </section>
         )}
 
-        {/* ── Wishlists ─────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h2 className="section-title" style={{ fontSize: '1.1rem', marginBottom: 0 }}>
-            My wishlists
-          </h2>
-          <button className="btn-primary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }} onClick={() => setShowForm(true)}>
-            + New list
-          </button>
-        </div>
+        {/* ── My Wishlists ──────────────────────────────────────────────────── */}
+        <section className="dashboard-section dashboard-section--mine">
+          <div className="dashboard-section-header">
+            <h2 className="section-title" style={{ marginBottom: 0 }}>My wishlists</h2>
+            <button
+              className="btn-primary"
+              style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }}
+              onClick={() => setShowForm(true)}
+            >
+              + New list
+            </button>
+          </div>
 
-        {/* Create new wishlist inline form */}
-        {showForm && (
-          <form className="add-item-form" onSubmit={createWishlist} style={{ marginBottom: '1.25rem' }}>
-            <p className="add-item-form-title">Create a new wishlist</p>
-            <div className="add-item-grid">
-              <div className="full-width">
-                <label className="form-label">List name</label>
-                <input
-                  className="form-input"
-                  placeholder="e.g. My 30th Birthday Wishlist"
-                  value={newList.title}
-                  onChange={(e) => setNewList((p) => ({ ...p, title: e.target.value }))}
-                  required
-                  autoFocus
-                />
+          {showForm && (
+            <form className="add-item-form" onSubmit={createWishlist} style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+              <p className="add-item-form-title">Create a new wishlist</p>
+              <div className="add-item-grid">
+                <div className="full-width">
+                  <label className="form-label">List name</label>
+                  <input
+                    className="form-input"
+                    placeholder="e.g. My 30th Birthday Wishlist"
+                    value={newList.title}
+                    onChange={(e) => setNewList((p) => ({ ...p, title: e.target.value }))}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Birthday / event date (optional)</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={newList.event_date}
+                    onChange={(e) => setNewList((p) => ({ ...p, event_date: e.target.value }))}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="form-label">Birthday / event date (optional)</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={newList.event_date}
-                  onChange={(e) => setNewList((p) => ({ ...p, event_date: e.target.value }))}
-                />
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                <button type="submit" className="btn-primary" disabled={creating}>{creating ? 'Creating…' : 'Create list'}</button>
+                <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
               </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-              <button type="submit" className="btn-primary" disabled={creating}>{creating ? 'Creating…' : 'Create list'}</button>
-              <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
-            </div>
-          </form>
-        )}
+            </form>
+          )}
 
-        <div className="wishlists-grid">
-          {/* Existing wishlists */}
-          {wishlists.map((list) => (
-            <div key={list.id} className="wishlist-card" onClick={() => navigate(`/wishlist/${list.id}`)}>
-              <div>
-                <p className="wishlist-card-title">{list.title}</p>
-                {list.event_date && (
-                  <p className="wishlist-card-date">🎂 {formatDate(list.event_date)}</p>
-                )}
+          <div className="wishlists-grid" style={{ marginTop: '1rem' }}>
+            {wishlists.map((list) => (
+              <WishlistCard key={list.id} list={list} onDelete={handleDeleteList} />
+            ))}
+            {!showForm && (
+              <div className="wishlist-card-new" onClick={() => setShowForm(true)}>
+                <span className="wishlist-card-new-icon">＋</span>
+                <span className="wishlist-card-new-label">New wishlist</span>
               </div>
-              <div className="wishlist-card-meta">
-                <span className="badge badge-purple">{list.item_count} item{list.item_count !== 1 ? 's' : ''}</span>
-                {list.is_public ? (
-                  <span className="badge badge-green">Public</span>
-                ) : (
-                  <span className="badge">Private</span>
-                )}
-              </div>
-              <div className="wishlist-card-footer">
-                <Link
-                  to={`/list/${list.share_token}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="btn-ghost"
-                  style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-                >
-                  Share link
-                </Link>
-                <button
-                  className="btn-ghost"
-                  style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem', color: '#EF4444' }}
-                  onClick={(e) => { e.stopPropagation(); handleDeleteList(list.id, list.title); }}
-                  title="Delete this wishlist"
-                >
-                  🗑 Delete
-                </button>
-              </div>
-            </div>
-          ))}
+            )}
+          </div>
 
-          {/* Add new list tile */}
-          {!showForm && (
-            <div className="wishlist-card-new" onClick={() => setShowForm(true)}>
-              <span className="wishlist-card-new-icon">＋</span>
-              <span className="wishlist-card-new-label">New wishlist</span>
+          {wishlists.length === 0 && !showForm && (
+            <div style={{ textAlign: 'center', padding: '2.5rem 0', color: 'var(--color-text-muted)' }}>
+              <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎁</p>
+              <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>No wishlists yet</p>
+              <p style={{ fontSize: '0.875rem' }}>Create your first wishlist so friends know exactly what to get you.</p>
             </div>
           )}
-        </div>
+        </section>
 
-        {wishlists.length === 0 && !showForm && (
-          <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--color-text-muted)' }}>
-            <p style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎁</p>
-            <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>No wishlists yet</p>
-            <p style={{ fontSize: '0.875rem' }}>Create your first wishlist so friends know exactly what to get you.</p>
+        {/* ── Friends' Wishlists ────────────────────────────────────────────── */}
+        <section className="dashboard-section" style={{ marginTop: '2rem' }}>
+          <div className="dashboard-section-header">
+            <h2 className="section-title" style={{ marginBottom: 0 }}>Friends' Wishlists</h2>
+            <Link to="/friends" className="btn-ghost" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
+              View all →
+            </Link>
           </div>
-        )}
+          <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}>
+            <p style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>🤝</p>
+            <p style={{ fontSize: '0.875rem' }}>
+              Wishlists shared with you by friends will appear here.{' '}
+              <Link to="/friends" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Add friends →</Link>
+            </p>
+          </div>
+        </section>
+
+        {/* ── Creators' Wishlists ───────────────────────────────────────────── */}
+        <section className="dashboard-section" style={{ marginTop: '2rem' }}>
+          <div className="dashboard-section-header">
+            <h2 className="section-title" style={{ marginBottom: 0 }}>Creators' Wishlists</h2>
+            <Link to="/friends" className="btn-ghost" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
+              Find creators →
+            </Link>
+          </div>
+
+          {creatorFeed.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}>
+              <p style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>🌟</p>
+              <p style={{ fontSize: '0.875rem' }}>
+                Follow your favorite creators to see their wishlists here.
+              </p>
+            </div>
+          ) : (
+            <div className="wishlists-grid" style={{ marginTop: '1rem' }}>
+              {creatorFeed.map((w) => (
+                <Link key={w.id} to={`/list/${w.share_token}`} style={{ textDecoration: 'none' }}>
+                  <div className="wishlist-card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                      <MiniAvatar name={w.display_name || w.owner_name} url={w.owner_avatar} />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                        @{w.display_name || w.owner_name}
+                      </span>
+                    </div>
+                    <p className="wishlist-card-title">{w.title}</p>
+                    {w.event_date && (
+                      <p className="wishlist-card-date">
+                        🎂 {new Date(w.event_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       {/* ── Sidebar ads ───────────────────────────────────────────────────── */}

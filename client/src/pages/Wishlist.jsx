@@ -141,6 +141,18 @@ export default function Wishlist() {
     </div>
   );
 
+  async function handleVisibilityChange(vis) {
+    try {
+      const res = await axios.patch(`/api/wishlists/${wishlist.id}`, {
+        ...wishlist, visibility: vis,
+      });
+      setWishlist(res.data.wishlist);
+    } catch {
+      setError('Could not update visibility.');
+    }
+  }
+
+  const currentVisibility = wishlist?.visibility || (wishlist?.is_public ? 'public' : 'friends');
   const shareUrl = `${window.location.origin}/list/${wishlist?.share_token}`;
 
   return (
@@ -166,8 +178,52 @@ export default function Wishlist() {
           </Link>
         </div>
 
+        {/* ── Visibility selector ──────────────────────────────────────────── */}
+        <div style={{
+          padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)',
+          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+          marginBottom: '0.75rem',
+        }}>
+          <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text)', marginBottom: '0.75rem' }}>
+            👁 Who can see this wishlist?
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {[
+              { value: 'public',   label: '🌎 Public',          tip: 'Anyone with the link can view this wishlist.' },
+              { value: 'friends',  label: '👥 Friends',         tip: 'Only your accepted friends can view this wishlist.' },
+              { value: 'specific', label: '🔒 Specific people', tip: 'Only friends you hand-pick can view this wishlist.', disabled: true },
+            ].map(({ value, label, tip, disabled }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => !disabled && handleVisibilityChange(value)}
+                title={disabled ? 'Coming soon — add friends first' : tip}
+                style={{
+                  padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)',
+                  fontSize: '0.8rem', fontWeight: 600,
+                  border: currentVisibility === value ? '2px solid var(--color-primary)' : '1.5px solid var(--color-border)',
+                  background: currentVisibility === value ? '#EDE9FE' : 'var(--color-background)',
+                  color: currentVisibility === value ? 'var(--color-primary)' : disabled ? '#D1D5DB' : 'var(--color-text-muted)',
+                  cursor: disabled ? 'not-allowed' : 'pointer',
+                  opacity: disabled ? 0.5 : 1,
+                  transition: 'all 0.15s',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+            {currentVisibility === 'public'
+              ? 'Anyone with the link can view this wishlist.'
+              : currentVisibility === 'friends'
+              ? 'Only your accepted friends can view this wishlist.'
+              : 'Only specific friends you choose can view this wishlist.'}
+          </p>
+        </div>
+
         {/* ── Share banner ─────────────────────────────────────────────────── */}
-        {wishlist?.is_public && (
+        {currentVisibility === 'public' && (
           <div className="share-banner">
             <div>
               <p className="share-banner-text">📤 Share your wishlist with friends & family</p>

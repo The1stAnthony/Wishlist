@@ -147,4 +147,82 @@ router.post('/toggle-creator', requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/follows/feed ───────────────────────────────────────────────────
+// Public wishlists from creators I follow — powers the Creators' Wishlists section.
+
+router.get('/feed', requireAuth, async (req, res) => {
+  try {
+    const wishlists = await query(
+      `SELECT w.id, w.title, w.event_date, w.share_token,
+              u.id AS owner_id, u.display_name, u.name AS owner_name, u.avatar_url AS owner_avatar,
+              (SELECT image_url FROM wishlist_items
+               WHERE wishlist_id = w.id AND image_url IS NOT NULL
+               ORDER BY priority ASC, created_at ASC LIMIT 1) AS cover_image
+       FROM wishlists w
+       JOIN users u ON u.id = w.user_id
+       JOIN follows f ON f.followed_id = w.user_id
+       WHERE f.follower_id = $1 AND w.is_public = TRUE
+       ORDER BY w.created_at DESC
+       LIMIT 20`,
+      [req.user.id]
+    );
+    res.json({ wishlists });
+  } catch (err) {
+    console.error('Feed error:', err);
+    res.status(500).json({ error: 'Could not fetch feed' });
+  }
+});
+
+// ── GET /api/follows/network-upcoming ──────────────────────────────────────
+// Wishlists with upcoming event dates from creators I follow.
+
+router.get('/network-upcoming', requireAuth, async (req, res) => {
+  try {
+    const wishlists = await query(
+      `SELECT w.id, w.title, w.event_date, w.share_token,
+              u.id AS owner_id, u.display_name, u.name AS owner_name, u.avatar_url AS owner_avatar,
+              (SELECT image_url FROM wishlist_items
+               WHERE wishlist_id = w.id AND image_url IS NOT NULL
+               ORDER BY priority ASC LIMIT 1) AS cover_image
+       FROM wishlists w
+       JOIN users u ON u.id = w.user_id
+       JOIN follows f ON f.followed_id = w.user_id
+       WHERE f.follower_id = $1 AND w.is_public = TRUE AND w.event_date IS NOT NULL
+       ORDER BY w.event_date ASC
+       LIMIT 10`,
+      [req.user.id]
+    );
+    res.json({ wishlists });
+  } catch (err) {
+    console.error('Network upcoming error:', err);
+    res.status(500).json({ error: 'Could not fetch upcoming events' });
+  }
+});
+
+// ── GET /api/follows/search?q=handle ───────────────────────────────────────
+// Search for creator accounts by display_name handle.
+
+router.get('/search', requireAuth, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q || q.length < 2) return res.json({ users: [] });
+
+  try {
+    const users = await query(
+      `SELECT id, display_name, avatar_url,
+              EXISTS(
+                SELECT 1 FROM follows WHERE follower_id = $1 AND followed_id = id
+              ) AS i_follow
+       FROM users
+       WHERE creator_mode = TRUE AND display_name ILIKE $2 AND id != $1
+       ORDER BY display_name ASC
+       LIMIT 10`,
+      [req.user.id, `%${q}%`]
+    );
+    res.json({ users });
+  } catch (err) {
+    console.error('Creator search error:', err);
+    res.status(500).json({ error: 'Could not search creators' });
+  }
+});
+
 module.exports = router;
