@@ -17,8 +17,7 @@ const CATEGORIES = [
 // Links work either way — we just don't earn commission until approved.
 function getTag() {
   const tag = process.env.AMAZON_AFFILIATE_TAG;
-  // Treat the placeholder value as "not set"
-  if (!tag || tag === 'alliwant-20') return null;
+  if (!tag || tag.includes('your-real-tag')) return null;
   return tag;
 }
 

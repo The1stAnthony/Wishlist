@@ -104,18 +104,30 @@
   background-color: #EDE9FE;
 }
 
-/* ── Browse categories section ────────────────────────────────────────────── */
-/* Mirrors footer structure: px-6 on outer, max-w-5xl mx-auto on inner       */
-/* so the left edge of "BROWSE BY CATEGORY" lines up with "AllIWant"         */
-.search-categories-section {
-  @apply px-6 py-10;
+/* ── Main content layout ──────────────────────────────────────────────────── */
+/* Mirrors footer: px-6 on outer, max-w-5xl mx-auto on inner.                */
+/* Left edge of content (results + categories) lines up with "All I Want".   */
+.search-outer {
+  @apply px-6 py-8;
   background-color: var(--color-background);
-  border-top: 1px solid var(--color-border);
 }
 
-.search-categories-inner {
-  max-width: 64rem; /* 1024px = max-w-5xl, same as footer-inner */
+.search-inner-grid {
+  max-width: 64rem; /* 1024px = same as footer-inner */
   margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .search-inner-grid {
+    grid-template-columns: 1fr;
+  }
+  .search-inner-grid .sidebar-ads {
+    display: none;
+  }
 }
 
 /* ── Category grid ────────────────────────────────────────────────────────── */

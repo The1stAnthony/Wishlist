@@ -4,11 +4,11 @@ import AdBanner from '../components/AdBanner';
 import '../styles/pages/search.css';
 
 export default function Search() {
-  const [query,       setQuery]       = useState('');
-  const [results,     setResults]     = useState(null);
-  const [categories,  setCategories]  = useState([]);
-  const [searching,   setSearching]   = useState(false);
-  const [error,       setError]       = useState('');
+  const [query,      setQuery]      = useState('');
+  const [results,    setResults]    = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [searching,  setSearching]  = useState(false);
+  const [error,      setError]      = useState('');
 
   useEffect(() => {
     axios.get('/api/search/categories')
@@ -19,11 +19,9 @@ export default function Search() {
   async function handleSearch(e) {
     e.preventDefault();
     if (!query.trim()) return;
-
     setSearching(true);
     setError('');
     setResults(null);
-
     try {
       const res = await axios.get('/api/search', { params: { q: query } });
       setResults(res.data);
@@ -38,7 +36,6 @@ export default function Search() {
     setQuery(term);
     setSearching(true);
     setResults(null);
-
     axios.get('/api/search', { params: { q: term } })
       .then((res) => setResults(res.data))
       .catch(() => setError('Search failed.'))
@@ -53,10 +50,7 @@ export default function Search() {
       {/* ── Search hero ─────────────────────────────────────────────────── */}
       <div className="search-hero">
         <h1 className="search-hero-title">🔍 Find the perfect gift</h1>
-        <p className="search-hero-sub">
-          Search Amazon and add items directly to your wishlist
-        </p>
-
+        <p className="search-hero-sub">Search Amazon and add items directly to your wishlist</p>
         <form onSubmit={handleSearch}>
           <div className="search-bar-wrapper">
             <input
@@ -74,110 +68,97 @@ export default function Search() {
         </form>
       </div>
 
-      {/* ── Results + sidebar ───────────────────────────────────────────── */}
-      <div className="page-with-sidebar">
-        <div>
-          {error && <p className="auth-error" style={{ marginBottom: '1rem' }}>{error}</p>}
+      {/* ── Main content — aligned to footer's "All I Want" left edge ────── */}
+      <div className="search-outer">
+        <div className="search-inner-grid">
 
-          {results && (
-            <div className="search-results">
-              <p className="search-results-title">
-                Results for "<strong>{results.query}</strong>"
-              </p>
+          {/* Left column: results + categories */}
+          <div>
+            {error && <p className="auth-error" style={{ marginBottom: '1rem' }}>{error}</p>}
 
-              <a
-                href={results.amazon_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="amazon-cta"
-              >
-                <div className="amazon-cta-left">
-                  <span className="amazon-cta-label">Shop on Amazon</span>
-                  <span className="amazon-cta-text">
-                    See all results for "{results.query}" →
-                  </span>
-                </div>
-                <span className="amazon-cta-arrow">🛒</span>
-              </a>
+            {/* ── Search results ─────────────────────────────────────────── */}
+            {results && (
+              <div className="search-results">
+                <p className="search-results-title">
+                  Results for "<strong>{results.query}</strong>"
+                </p>
 
-              <p style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--color-text)' }}>
-                Try a more specific search:
-              </p>
-              <div className="suggestion-chips">
-                {results.suggestions.map((s) => (
-                  <a
-                    key={s.term}
-                    href={s.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="suggestion-chip"
-                  >
-                    {s.term}
-                  </a>
-                ))}
-              </div>
-
-              <AdBanner format="horizontal" />
-            </div>
-          )}
-        </div>
-
-        {/* ── Sidebar ads ─────────────────────────────────────────────── */}
-        <aside className="sidebar-ads ad-sidebar">
-          <AdBanner format="sidebar" />
-          <AdBanner format="sidebar" />
-          <AdBanner format="sidebar" />
-          <AdBanner format="sidebar" />
-        </aside>
-      </div>
-
-      {/* ── Browse categories — aligned to footer's AllIWant left edge ── */}
-      {categories.length > 0 && (
-        <section className="search-categories-section">
-          <div className="search-categories-inner">
-            <p className="section-subtitle">BROWSE BY CATEGORY</p>
-            <h2 className="section-title" style={{ fontSize: '1.25rem' }}>
-              What kind of gift are you looking for?
-            </h2>
-
-            <div className="category-grid" style={{ marginTop: '1rem' }}>
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  className="category-tile"
-                  onClick={() => searchTerm(cat.terms[0])}
+                <a
+                  href={results.amazon_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="amazon-cta"
                 >
-                  <span className="category-tile-icon">{cat.icon}</span>
-                  <span className="category-tile-label">{cat.label}</span>
-                </button>
-              ))}
-            </div>
+                  <div className="amazon-cta-left">
+                    <span className="amazon-cta-label">Shop on Amazon</span>
+                    <span className="amazon-cta-text">See all results for "{results.query}" →</span>
+                  </div>
+                  <span className="amazon-cta-arrow">🛒</span>
+                </a>
 
-            {results && categories.find((c) => c.terms[0] === query) && (
-              <div style={{ marginTop: '1.5rem' }}>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-                  Popular searches in this category:
+                <p style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--color-text)' }}>
+                  Try a more specific search:
                 </p>
                 <div className="suggestion-chips">
-                  {categories
-                    .find((c) => c.terms[0] === query)
-                    ?.links.map((l) => (
-                      <a
-                        key={l.term}
-                        href={l.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="suggestion-chip"
-                      >
-                        {l.term}
-                      </a>
-                    ))}
+                  {results.suggestions.map((s) => (
+                    <a key={s.term} href={s.url} target="_blank" rel="noopener noreferrer" className="suggestion-chip">
+                      {s.term}
+                    </a>
+                  ))}
                 </div>
+
+                <AdBanner format="horizontal" />
+              </div>
+            )}
+
+            {/* ── Browse categories ──────────────────────────────────────── */}
+            {categories.length > 0 && (
+              <div style={{ marginTop: results ? '2rem' : '0' }}>
+                <p className="section-subtitle">BROWSE BY CATEGORY</p>
+                <h2 className="section-title" style={{ fontSize: '1.25rem' }}>
+                  What kind of gift are you looking for?
+                </h2>
+
+                <div className="category-grid" style={{ marginTop: '1rem' }}>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      className="category-tile"
+                      onClick={() => searchTerm(cat.terms[0])}
+                    >
+                      <span className="category-tile-icon">{cat.icon}</span>
+                      <span className="category-tile-label">{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {results && categories.find((c) => c.terms[0] === query) && (
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <p style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+                      Popular searches in this category:
+                    </p>
+                    <div className="suggestion-chips">
+                      {categories.find((c) => c.terms[0] === query)?.links.map((l) => (
+                        <a key={l.term} href={l.url} target="_blank" rel="noopener noreferrer" className="suggestion-chip">
+                          {l.term}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        </section>
-      )}
+
+          {/* Right column: sidebar ads */}
+          <aside className="sidebar-ads ad-sidebar">
+            <AdBanner format="sidebar" />
+            <AdBanner format="sidebar" />
+            <AdBanner format="sidebar" />
+            <AdBanner format="sidebar" />
+          </aside>
+        </div>
+      </div>
     </div>
   );
 }
