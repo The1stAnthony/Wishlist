@@ -56,7 +56,7 @@ export default function Navbar() {
 
         {/* Desktop right side */}
         <div className="navbar-actions">
-          {user ? (
+          {user && (
             <>
               <Link to="/profile" className="navbar-user" onClick={closeMenu}>
                 <div className="navbar-avatar">{initials}</div>
@@ -66,24 +66,21 @@ export default function Navbar() {
                 Sign out
               </button>
             </>
-          ) : (
-            <>
-              <Link to="/login"    className="btn-ghost">Sign in</Link>
-              <Link to="/register" className="btn-primary">Get started</Link>
-            </>
           )}
 
-          {/* Hamburger — mobile only */}
-          <button
-            className={`hamburger ${menuOpen ? 'is-open' : ''}`}
-            onClick={() => setMenuOpen((o) => !o)}
-            aria-label="Toggle menu"
-            aria-expanded={menuOpen}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
+          {/* Hamburger — mobile only, only needed when logged in */}
+          {user && (
+            <button
+              className={`hamburger ${menuOpen ? 'is-open' : ''}`}
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label="Toggle menu"
+              aria-expanded={menuOpen}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+          )}
         </div>
       </nav>
 
@@ -103,9 +100,8 @@ export default function Navbar() {
         </div>
 
         <div className="mobile-nav">
-          {user ? (
+          {user && (
             <>
-              {/* User info at top of drawer */}
               <div className="mobile-user-info">
                 <div className="navbar-avatar" style={{ width: 40, height: 40, fontSize: '1rem' }}>
                   {initials}
@@ -130,13 +126,6 @@ export default function Navbar() {
               <button className="mobile-nav-link mobile-signout" onClick={handleLogout}>
                 Sign out
               </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login"    className="mobile-nav-link" onClick={closeMenu}>Sign in</Link>
-              <Link to="/register" className="btn-primary mobile-nav-cta" onClick={closeMenu}>
-                Get started — it's free
-              </Link>
             </>
           )}
         </div>

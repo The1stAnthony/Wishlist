@@ -65,22 +65,13 @@ export default function Home() {
           who love you shop with confidence — no more guessing, no more returns.
         </p>
 
-        <div className="hero-actions">
-          {user ? (
+        {user && (
+          <div className="hero-actions">
             <Link to="/dashboard" className="btn-primary" style={{ fontSize: '1rem', padding: '0.75rem 2rem' }}>
               Go to my dashboard →
             </Link>
-          ) : (
-            <>
-              <Link to="/register" className="btn-primary" style={{ fontSize: '1rem', padding: '0.75rem 2rem' }}>
-                Create my wishlist — it's free
-              </Link>
-              <Link to="/login" className="btn-secondary" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }}>
-                Sign in
-              </Link>
-            </>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Trust bar */}
         <div className="hero-trust">
@@ -144,8 +135,8 @@ export default function Home() {
               <li>🔗 <strong>One link</strong> — share it in your bio, stream, or posts</li>
               <li>✅ <strong>No duplicates</strong> — viewers coordinate automatically</li>
             </ul>
-            {!user && (
-              <Link to="/register" className="btn-primary" style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
+            {user && (
+              <Link to="/dashboard" className="btn-primary" style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
                 Set up creator wishlist →
               </Link>
             )}
@@ -195,17 +186,23 @@ export default function Home() {
       </section>
 
       {/* ── CTA ───────────────────────────────────────────────────────────── */}
-      {!user && (
-        <section className="cta-section">
-          <h2 className="cta-title">Ready for your best birthday yet?</h2>
-          <p className="cta-subtitle">
-            Free to use. Works with every store. Takes two minutes to set up.
-          </p>
-          <Link to="/register" className="cta-btn">
-            🎂 Create my free wishlist
-          </Link>
-        </section>
-      )}
+      <section className="cta-section">
+        <h2 className="cta-title">
+          {user ? 'Ready for your best birthday yet?' : 'Built for birthday people. And their fans.'}
+        </h2>
+        <p className="cta-subtitle">
+          {user
+            ? 'Head to your dashboard to manage your wishlists and birthday tracker.'
+            : 'Free to use. Every store supported. Full privacy control. Launching soon.'}
+        </p>
+        {user ? (
+          <Link to="/dashboard" className="cta-btn">🎂 Go to my dashboard</Link>
+        ) : (
+          <span className="cta-btn" style={{ cursor: 'default', opacity: 0.9 }}>
+            🚀 Early access coming soon
+          </span>
+        )}
+      </section>
     </>
   );
 }
