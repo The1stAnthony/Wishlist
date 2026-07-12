@@ -104,28 +104,36 @@
   background-color: #EDE9FE;
 }
 
-/* ── Main content layout ──────────────────────────────────────────────────── */
-/* Mirrors footer: px-6 on outer, max-w-5xl mx-auto on inner.                */
-/* Left edge of content (results + categories) lines up with "All I Want".   */
+/* ── 3-column layout: left ads | content | right ads ─────────────────────── */
 .search-outer {
-  @apply px-6 py-8;
+  @apply px-4 py-8;
   background-color: var(--color-background);
 }
 
-.search-inner-grid {
-  max-width: 64rem; /* 1024px = same as footer-inner */
-  margin: 0 auto;
+.search-3col {
   display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 2rem;
+  grid-template-columns: 220px 1fr 220px;
+  gap: 1.5rem;
   align-items: start;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-@media (max-width: 1024px) {
-  .search-inner-grid {
+.search-side-ads {
+  @apply flex flex-col gap-4;
+}
+
+.search-center {
+  min-width: 0;
+}
+
+/* Below 1280px: collapse to single centered column — no sidebars */
+@media (max-width: 1280px) {
+  .search-3col {
     grid-template-columns: 1fr;
+    max-width: 700px;   /* centers content like the footer does */
   }
-  .search-inner-grid .sidebar-ads {
+  .search-side-ads {
     display: none;
   }
 }

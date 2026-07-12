@@ -44,7 +44,7 @@ export default function Search() {
 
   return (
     <div>
-      {/* ── Top banner ad ───────────────────────────────────────────────── */}
+      {/* ── Top banner ad (full width) ──────────────────────────────────── */}
       <AdBanner format="horizontal" />
 
       {/* ── Search hero ─────────────────────────────────────────────────── */}
@@ -68,15 +68,21 @@ export default function Search() {
         </form>
       </div>
 
-      {/* ── Main content — aligned to footer's "All I Want" left edge ────── */}
+      {/* ── 3-column layout: left ads | content | right ads ─────────────── */}
       <div className="search-outer">
-        <div className="search-inner-grid">
+        <div className="search-3col">
 
-          {/* Left column: results + categories */}
-          <div>
+          {/* Left sidebar — 2 ads */}
+          <aside className="search-side-ads">
+            <AdBanner format="sidebar" />
+            <AdBanner format="sidebar" />
+          </aside>
+
+          {/* Center content */}
+          <div className="search-center">
             {error && <p className="auth-error" style={{ marginBottom: '1rem' }}>{error}</p>}
 
-            {/* ── Search results ─────────────────────────────────────────── */}
+            {/* Search results */}
             {results && (
               <div className="search-results">
                 <p className="search-results-title">
@@ -106,19 +112,16 @@ export default function Search() {
                     </a>
                   ))}
                 </div>
-
-                <AdBanner format="horizontal" />
               </div>
             )}
 
-            {/* ── Browse categories ──────────────────────────────────────── */}
+            {/* Browse categories */}
             {categories.length > 0 && (
               <div style={{ marginTop: results ? '2rem' : '0' }}>
                 <p className="section-subtitle">BROWSE BY CATEGORY</p>
                 <h2 className="section-title" style={{ fontSize: '1.25rem' }}>
                   What kind of gift are you looking for?
                 </h2>
-
                 <div className="category-grid" style={{ marginTop: '1rem' }}>
                   {categories.map((cat) => (
                     <button
@@ -148,15 +151,19 @@ export default function Search() {
                 )}
               </div>
             )}
+
+            {/* Bottom horizontal banner — caps the content height */}
+            <div style={{ marginTop: '2rem' }}>
+              <AdBanner format="horizontal" />
+            </div>
           </div>
 
-          {/* Right column: sidebar ads */}
-          <aside className="sidebar-ads ad-sidebar">
-            <AdBanner format="sidebar" />
-            <AdBanner format="sidebar" />
+          {/* Right sidebar — 2 ads */}
+          <aside className="search-side-ads">
             <AdBanner format="sidebar" />
             <AdBanner format="sidebar" />
           </aside>
+
         </div>
       </div>
     </div>
