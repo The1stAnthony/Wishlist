@@ -1,4 +1,5 @@
 const express = require('express');
+const { searchProducts, getByCategory, ALL_PRODUCTS } = require('../data/products');
 
 const router = express.Router();
 
@@ -40,6 +41,13 @@ function injectAffiliateTag(url) {
     return url;
   }
 }
+
+// GET /api/search/products?q=...&category=...
+router.get('/products', (req, res) => {
+  const { q, category } = req.query;
+  let results = q?.trim() ? searchProducts(q) : (category ? getByCategory(category) : ALL_PRODUCTS);
+  res.json({ products: results, total: results.length });
+});
 
 // GET /api/search?q=...
 router.get('/', (req, res) => {
