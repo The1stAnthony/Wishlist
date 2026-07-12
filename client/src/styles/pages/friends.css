@@ -1,0 +1,192 @@
+.friends-page {
+  @apply max-w-xl mx-auto;
+  padding: 2rem 1.5rem;
+}
+
+.friends-page-title {
+  @apply text-2xl font-extrabold;
+  color: var(--color-text);
+}
+
+.friends-back-btn {
+  @apply text-sm font-semibold mb-4 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all;
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.friends-back-btn:hover {
+  background-color: var(--color-background);
+}
+
+/* ── Creator follower block (main view) ─────────────────────────────────── */
+
+.friends-creator-block {
+  @apply w-full flex items-center justify-between p-4 rounded-xl transition-all cursor-pointer;
+  background: linear-gradient(135deg, #EDE9FE, #FAF9FF);
+  border: 1.5px solid var(--color-primary-light);
+  text-align: left;
+}
+
+.friends-creator-block:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.friends-creator-left {
+  @apply flex flex-col gap-2;
+}
+
+.friends-follower-label {
+  @apply text-sm font-semibold;
+  color: var(--color-primary-dark);
+}
+
+/* Overlapping avatar circles */
+.friends-avatar-stack {
+  @apply flex;
+}
+
+.friends-avatar-stack-item {
+  @apply flex-shrink-0;
+  margin-left: -8px;
+}
+
+.friends-avatar-stack-item:first-child {
+  margin-left: 0;
+}
+
+.friends-follower-count-badge {
+  @apply text-2xl font-extrabold;
+  color: var(--color-primary-dark);
+}
+
+/* ── Followers sub-view header ──────────────────────────────────────────── */
+
+.friends-followers-header {
+  @apply flex items-start justify-between mb-4;
+}
+
+.friends-creator-note {
+  @apply text-xs mt-0.5;
+  color: var(--color-text-muted);
+}
+
+/* ── Section heading ────────────────────────────────────────────────────── */
+
+.friends-section-title {
+  @apply text-lg font-bold;
+  color: var(--color-text);
+}
+
+/* ── Friend / follower list ─────────────────────────────────────────────── */
+
+.friends-list {
+  @apply flex flex-col gap-3 mt-4;
+}
+
+.friends-row {
+  @apply flex items-center gap-3 p-3 rounded-xl;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.friends-avatar-img {
+  @apply flex-shrink-0 object-cover;
+  border: 2px solid var(--color-border);
+}
+
+.friends-avatar-initials {
+  @apply flex-shrink-0 rounded-full flex items-center justify-center font-bold;
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.4);
+}
+
+.friends-handle {
+  @apply flex-1 text-sm font-semibold truncate;
+  color: var(--color-text);
+}
+
+.friends-real-name {
+  @apply flex-1 text-sm font-semibold truncate;
+  color: var(--color-text);
+}
+
+/* ── Action buttons ─────────────────────────────────────────────────────── */
+
+.friends-btn {
+  @apply flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer;
+  border: none;
+}
+
+.friends-btn-unfollow {
+  background-color: #F3F4F6;
+  color: #6B7280;
+  border: 1px solid #E5E7EB;
+}
+
+.friends-btn-unfollow:hover {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  border-color: #FCA5A5;
+}
+
+.friends-btn-follow-back {
+  background-color: var(--color-accent);
+  color: #1F2937;
+}
+
+.friends-btn-follow-back:hover {
+  background-color: #D97706;
+}
+
+.friends-btn-pending {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+.friends-btn-pending:hover {
+  background-color: #FDE68A;
+}
+
+.friends-btn-new {
+  background-color: #ECFDF5;
+  color: #065F46;
+  border: 1px solid #6EE7B7;
+}
+
+.friends-btn-new:hover {
+  background-color: #D1FAE5;
+}
+
+.friends-btn-unfriend {
+  background-color: #F3F4F6;
+  color: #6B7280;
+  border: 1px solid #E5E7EB;
+}
+
+.friends-btn-unfriend:hover {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  border-color: #FCA5A5;
+}
+
+/* ── Empty states ───────────────────────────────────────────────────────── */
+
+.friends-empty {
+  @apply text-sm py-6 text-center;
+  color: var(--color-text-muted);
+}
+
+.friends-empty-state {
+  @apply text-center py-10;
+  color: var(--color-text-muted);
+}
+
+.friends-error {
+  @apply text-sm mb-3 px-3 py-2 rounded-lg;
+  background-color: #FEE2E2;
+  color: #991B1B;
+}

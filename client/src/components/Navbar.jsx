@@ -25,6 +25,7 @@ export default function Navbar() {
     ? [
         { to: '/dashboard',  label: 'Dashboard' },
         { to: '/birthdays',  label: '🎂 Birthdays' },
+        { to: '/friends',    label: 'Friends' },
         { to: '/search',     label: 'Find Gifts' },
         { to: '/profile',    label: 'Profile' },
       ]

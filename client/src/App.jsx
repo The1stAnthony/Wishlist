@@ -12,6 +12,7 @@ import SharedList  from './pages/SharedList';
 import Search      from './pages/Search';
 import Birthdays   from './pages/Birthdays';
 import Profile     from './pages/Profile';
+import Friends     from './pages/Friends';
 
 /**
  * Redirects unauthenticated users to /login.
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/wishlist/:id"  element={<PrivateRoute><Wishlist /></PrivateRoute>} />
           <Route path="/search"        element={<PrivateRoute><Search /></PrivateRoute>} />
           <Route path="/birthdays"     element={<PrivateRoute><Birthdays /></PrivateRoute>} />
+          <Route path="/friends"       element={<PrivateRoute><Friends /></PrivateRoute>} />
           <Route path="/profile"       element={<PrivateRoute><Profile /></PrivateRoute>} />
 
           {/* Catch-all */}

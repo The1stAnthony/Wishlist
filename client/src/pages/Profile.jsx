@@ -24,6 +24,11 @@ export default function Profile() {
   const [success, setSuccess] = useState(false);
   const [error,   setError]   = useState('');
 
+  // Creator mode state
+  const [creatorMode,        setCreatorMode]        = useState(false);
+  const [creatorModeLoading, setCreatorModeLoading] = useState(false);
+  const [creatorModeError,   setCreatorModeError]   = useState('');
+
   // Password change state
   const [pwForm,    setPwForm]    = useState({ current: '', newPw: '', confirm: '' });
   const [pwSaving,  setPwSaving]  = useState(false);
@@ -48,6 +53,7 @@ export default function Profile() {
         zip_code:       user.zip_code       || '',
         country:        user.country        || 'US',
       });
+      setCreatorMode(Boolean(user.creator_mode));
     }
 
     Promise.all([
@@ -114,6 +120,24 @@ export default function Profile() {
     } catch (err) {
       setDeleteError(err.response?.data?.error || 'Could not delete account.');
       setDeleting(false);
+    }
+  }
+
+  async function handleCreatorModeToggle() {
+    setCreatorModeError('');
+    if (!creatorMode && !form.display_name?.trim()) {
+      setCreatorModeError('Add a display name / handle above and save before enabling creator mode.');
+      return;
+    }
+    setCreatorModeLoading(true);
+    try {
+      const res = await axios.post('/api/follows/toggle-creator', { creator_mode: !creatorMode });
+      setCreatorMode(res.data.creator_mode);
+      updateUser({ ...user, creator_mode: res.data.creator_mode });
+    } catch (err) {
+      setCreatorModeError(err.response?.data?.error || 'Could not update creator mode.');
+    } finally {
+      setCreatorModeLoading(false);
     }
   }
 
@@ -361,6 +385,61 @@ export default function Profile() {
           {pwSaving ? 'Updating…' : 'Update password'}
         </button>
       </form>
+
+      {/* ── Creator mode ──────────────────────────────────────────────────── */}
+      <div className="profile-card" style={{ marginTop: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+          <div>
+            <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)', marginBottom: '0.25rem' }}>
+              🌟 Creator mode
+            </p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', maxWidth: 380 }}>
+              Enable to get a public profile page, appear in search, and build a following.
+              Requires a display name / handle. When enabled, <strong>@The_1st_Anthony</strong> becomes
+              your first follower and you follow them back automatically.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleCreatorModeToggle}
+            disabled={creatorModeLoading}
+            style={{
+              flexShrink: 0,
+              padding: '0.5rem 1rem',
+              borderRadius: 'var(--radius-lg)',
+              fontWeight: 700,
+              fontSize: '0.8rem',
+              border: 'none',
+              cursor: creatorModeLoading ? 'not-allowed' : 'pointer',
+              background: creatorMode ? '#D1FAE5' : 'var(--color-primary)',
+              color: creatorMode ? '#065F46' : 'white',
+              transition: 'background 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {creatorModeLoading ? '…' : creatorMode ? '✅ On — Disable' : 'Enable'}
+          </button>
+        </div>
+
+        {creatorModeError && (
+          <p style={{
+            fontSize: '0.8rem',
+            color: '#991B1B',
+            background: '#FEE2E2',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.5rem 0.75rem',
+            marginTop: '0.75rem',
+          }}>
+            {creatorModeError}
+          </p>
+        )}
+
+        {creatorMode && (
+          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.75rem' }}>
+            Your public profile: <strong>alliwant.xyz/u/{user?.display_name}</strong>
+          </p>
+        )}
+      </div>
 
       {/* ── Quick links ────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>

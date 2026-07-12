@@ -7,7 +7,7 @@ const requireAuth = require('../middleware/auth');
 const router = express.Router();
 
 // Columns safe to return to the client — never includes password
-const PUBLIC_FIELDS = 'id, name, display_name, email, birthday, avatar_url, created_at';
+const PUBLIC_FIELDS = 'id, name, display_name, email, birthday, avatar_url, creator_mode, created_at';
 
 // Owner's profile fetch also includes the private address fields
 const OWNER_FIELDS  = `${PUBLIC_FIELDS}, street_address, city, state, zip_code, country`;
@@ -191,5 +191,8 @@ router.delete('/account', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Could not delete account' });
   }
 });
+
+// ── PATCH /api/auth/creator-mode — kept here for auth namespace consistency ──
+// Actual logic lives in follows.js /toggle-creator — this is a convenience alias.
 
 module.exports = router;
