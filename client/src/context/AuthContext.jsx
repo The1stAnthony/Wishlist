@@ -38,8 +38,8 @@ export function AuthProvider({ children }) {
     setUser(user);
   }
 
-  async function register(name, email, password, birthday, display_name) {
-    const res = await axios.post('/api/auth/register', { name, display_name, email, password, birthday });
+  async function register(name, email, password, birthday, display_name, address) {
+    const res = await axios.post('/api/auth/register', { name, display_name, email, password, birthday, ...address });
     handleAuthSuccess(res.data.user, res.data.token);
     return res.data.user;
   }

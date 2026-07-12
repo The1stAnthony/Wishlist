@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [upcoming,  setUpcoming]      = useState([]);
   const [showForm,  setShowForm]      = useState(false);
   const [newList,   setNewList]       = useState({ title: '', event_date: '' });
+  const [creating,  setCreating]      = useState(false);
   const [loading,   setLoading]       = useState(true);
   const [error,     setError]         = useState('');
 
@@ -32,17 +33,28 @@ export default function Dashboard() {
 
   async function createWishlist(e) {
     e.preventDefault();
-    if (!newList.title.trim()) return;
-
+    if (!newList.title.trim() || creating) return;
+    setCreating(true);
     try {
       const res = await axios.post('/api/wishlists', newList);
       setWishlists((prev) => [res.data.wishlist, ...prev]);
       setNewList({ title: '', event_date: '' });
       setShowForm(false);
-      // Navigate to the new wishlist so they can start adding items
       navigate(`/wishlist/${res.data.wishlist.id}`);
     } catch {
       setError('Could not create wishlist. Please try again.');
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleDeleteList(listId, listTitle) {
+    if (!window.confirm(`Delete "${listTitle}"? This cannot be undone.`)) return;
+    try {
+      await axios.delete(`/api/wishlists/${listId}`);
+      setWishlists((prev) => prev.filter((w) => w.id !== listId));
+    } catch {
+      setError('Could not delete wishlist.');
     }
   }
 
@@ -133,7 +145,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-              <button type="submit" className="btn-primary">Create list</button>
+              <button type="submit" className="btn-primary" disabled={creating}>{creating ? 'Creating…' : 'Create list'}</button>
               <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
             </div>
           </form>
@@ -158,9 +170,6 @@ export default function Dashboard() {
                 )}
               </div>
               <div className="wishlist-card-footer">
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                  Click to manage →
-                </span>
                 <Link
                   to={`/list/${list.share_token}`}
                   onClick={(e) => e.stopPropagation()}
@@ -169,6 +178,14 @@ export default function Dashboard() {
                 >
                   Share link
                 </Link>
+                <button
+                  className="btn-ghost"
+                  style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem', color: '#EF4444' }}
+                  onClick={(e) => { e.stopPropagation(); handleDeleteList(list.id, list.title); }}
+                  title="Delete this wishlist"
+                >
+                  🗑 Delete
+                </button>
               </div>
             </div>
           ))}

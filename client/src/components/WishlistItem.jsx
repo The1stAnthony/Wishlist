@@ -2,21 +2,15 @@ import '../styles/components/wishlist-item.css';
 
 const PRIORITY_LABELS = { 1: '🔴 High', 2: '🟡 Medium', 3: '🟢 Low' };
 
-/**
- * Row-style item display used on the owner's private wishlist editing view.
- * Different from GiftCard (which is used on the public-facing shared view).
- *
- * Props:
- *   item      — wishlist_item row
- *   onDelete  — called with item.id when the delete button is clicked
- */
 export default function WishlistItem({ item, onDelete }) {
-  const affiliateUrl = item.affiliate_url || item.url;
-  const isPurchased  = Boolean(item.is_purchased);
+  const affiliateUrl  = item.affiliate_url || item.url;
+  const quantity      = item.quantity       || 1;
+  const purchased     = item.purchased_count || 0;
+  const remaining     = quantity - purchased;
+  const isFullyBought = remaining <= 0;
 
   return (
-    <div className={`wishlist-item ${isPurchased ? 'is-purchased' : ''}`}>
-      {/* Thumbnail or emoji placeholder */}
+    <div className={`wishlist-item ${isFullyBought ? 'is-purchased' : ''}`}>
       {item.image_url ? (
         <img src={item.image_url} alt={item.name} className="wishlist-item-thumb" />
       ) : (
@@ -37,7 +31,19 @@ export default function WishlistItem({ item, onDelete }) {
           <span className="badge badge-purple" style={{ fontSize: '0.65rem' }}>
             {PRIORITY_LABELS[item.priority] || '🟡 Medium'}
           </span>
-          {isPurchased && (
+
+          {/* Quantity status */}
+          {quantity > 1 && !isFullyBought && (
+            <span className="badge badge-amber" style={{ fontSize: '0.65rem' }}>
+              {remaining} of {quantity} remaining
+            </span>
+          )}
+          {quantity > 1 && isFullyBought && (
+            <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>
+              ✅ All {quantity} purchased
+            </span>
+          )}
+          {quantity === 1 && isFullyBought && (
             <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>
               ✅ Purchased
             </span>
@@ -46,7 +52,6 @@ export default function WishlistItem({ item, onDelete }) {
       </div>
 
       <div className="wishlist-item-actions">
-        {/* Open the product link in a new tab */}
         {affiliateUrl && (
           <a
             href={affiliateUrl}
@@ -58,7 +63,6 @@ export default function WishlistItem({ item, onDelete }) {
           </a>
         )}
 
-        {/* Delete — only the owner sees this */}
         {onDelete && (
           <button
             className="wishlist-item-delete"

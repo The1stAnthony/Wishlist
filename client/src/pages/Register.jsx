@@ -9,11 +9,13 @@ export default function Register() {
 
   const [form, setForm] = useState({
     name: '', display_name: '', email: '', password: '', confirmPassword: '', birthday: '',
+    street_address: '', city: '', state: '', zip_code: '', country: 'US',
   });
-  const [showPassword, setShowPassword]   = useState(false);
-  const [showConfirm,  setShowConfirm]    = useState(false);
-  const [error,        setError]          = useState('');
-  const [loading,      setLoading]        = useState(false);
+  const [showPassword,  setShowPassword]  = useState(false);
+  const [showConfirm,   setShowConfirm]   = useState(false);
+  const [showAddress,   setShowAddress]   = useState(false);
+  const [error,         setError]         = useState('');
+  const [loading,       setLoading]       = useState(false);
 
   function handleChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -40,7 +42,14 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await register(form.name, form.email, form.password, form.birthday || undefined, form.display_name || undefined);
+      const address = showAddress ? {
+        street_address: form.street_address || null,
+        city:           form.city           || null,
+        state:          form.state          || null,
+        zip_code:       form.zip_code       || null,
+        country:        form.country        || 'US',
+      } : null;
+      await register(form.name, form.email, form.password, form.birthday || undefined, form.display_name || undefined, address);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Something went wrong. Please try again.');
@@ -52,7 +61,7 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">All<span style={{ color: '#111827' }}> I </span><span>Want</span> 🎂</div>
+        <div className="auth-logo">All<span style={{ color: '#111827' }}> i</span><span>Want</span> 🎂</div>
 
         <h1 className="auth-title">Create your wishlist</h1>
         <p className="auth-subtitle">Free forever — no credit card needed</p>
@@ -194,6 +203,54 @@ export default function Register() {
               value={form.birthday}
               onChange={handleChange}
             />
+          </div>
+
+          {/* Optional shipping address */}
+          <div>
+            <button
+              type="button"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', color: 'var(--color-primary)', fontWeight: 600, padding: '0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.375rem' }}
+              onClick={() => setShowAddress((v) => !v)}
+            >
+              {showAddress ? '▾' : '▸'} Add a shipping address <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>(optional — lets gifters ship to you)</span>
+            </button>
+
+            {showAddress && (
+              <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div>
+                  <label className="form-label">Street address</label>
+                  <input name="street_address" className="form-input" placeholder="123 Main St" value={form.street_address} onChange={handleChange} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label className="form-label">City</label>
+                    <input name="city" className="form-input" placeholder="New York" value={form.city} onChange={handleChange} />
+                  </div>
+                  <div>
+                    <label className="form-label">State</label>
+                    <input name="state" className="form-input" placeholder="NY" value={form.state} onChange={handleChange} />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label className="form-label">ZIP code</label>
+                    <input name="zip_code" className="form-input" placeholder="10001" value={form.zip_code} onChange={handleChange} />
+                  </div>
+                  <div>
+                    <label className="form-label">Country</label>
+                    <select name="country" className="form-input" value={form.country} onChange={handleChange}>
+                      <option value="US">United States</option>
+                      <option value="CA">Canada</option>
+                      <option value="GB">United Kingdom</option>
+                      <option value="AU">Australia</option>
+                      <option value="DE">Germany</option>
+                      <option value="FR">France</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <button type="submit" className="auth-submit" disabled={loading}>

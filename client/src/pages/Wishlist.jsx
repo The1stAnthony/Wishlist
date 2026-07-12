@@ -7,7 +7,7 @@ import WishlistItem from '../components/WishlistItem';
 import '../styles/pages/wishlist.css';
 
 const EMPTY_FORM = {
-  name: '', description: '', price: '', url: '', image_url: '', priority: '2',
+  name: '', description: '', price: '', url: '', image_url: '', priority: '2', quantity: '1',
 };
 
 export default function Wishlist() {
@@ -56,6 +56,7 @@ export default function Wishlist() {
         ...form,
         price:         form.price    ? parseFloat(form.price) : null,
         priority:      parseInt(form.priority, 10),
+        quantity:      parseInt(form.quantity, 10) || 1,
         affiliate_url: affiliateUrl || form.url || '',
       };
 
@@ -256,6 +257,20 @@ export default function Wishlist() {
                 <option value="2">🟡 Medium — would love it</option>
                 <option value="3">🟢 Low — nice to have</option>
               </select>
+            </div>
+
+            <div>
+              <label className="form-label">Quantity wanted</label>
+              <input
+                name="quantity"
+                type="number"
+                min="1"
+                max="99"
+                className="form-input"
+                placeholder="1"
+                value={form.quantity}
+                onChange={handleChange}
+              />
             </div>
 
             <div className="full-width">

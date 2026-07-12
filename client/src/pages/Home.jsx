@@ -25,7 +25,7 @@ const FAQS = [
     a: 'No. Anyone with your share link can view your list and mark items as purchased — no sign-up required.',
   },
   {
-    q: 'Can I add items from any website?',
+    q: 'Can iadd items from any website?',
     a: 'Yes. Paste any product URL and it gets added to your list. Amazon, Target, Etsy, ASOS — any store works.',
   },
   {
@@ -88,7 +88,7 @@ export default function Home() {
         <div className="how-it-works-inner">
           <p className="section-subtitle" style={{ textAlign: 'center' }}>SIMPLE AS 1-2-3</p>
           <h2 className="section-title" style={{ textAlign: 'center' }}>
-            How <span style={{ color: 'var(--color-primary)' }}>All</span><span style={{ color: '#111827' }}> I </span><span style={{ color: 'var(--color-accent)' }}>Want</span> works
+            How <span style={{ color: 'var(--color-primary)' }}>All</span><span style={{ color: '#111827' }}> i</span><span style={{ color: 'var(--color-accent)' }}>Want</span> works
           </h2>
           <div className="steps-grid">
             {STEPS.map((step) => (

@@ -23,15 +23,12 @@ export default function SharedList() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  async function handlePurchase(itemId) {
+  async function handlePurchase(itemId, qty = 1) {
     try {
-      await axios.post(`/api/wishlists/items/${itemId}/purchase`);
-      // Update local state so the card shows as purchased immediately
+      const res = await axios.post(`/api/wishlists/items/${itemId}/purchase`, { qty });
       setData((prev) => ({
         ...prev,
-        items: prev.items.map((i) =>
-          i.id === itemId ? { ...i, is_purchased: true } : i
-        ),
+        items: prev.items.map((i) => i.id === itemId ? { ...i, ...res.data.item } : i),
       }));
     } catch (err) {
       alert(err.response?.data?.error || 'Could not mark item as purchased.');
@@ -47,7 +44,7 @@ export default function SharedList() {
           <p style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎁</p>
           <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{error}</p>
           <Link to="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>
-            Go to AllIWant
+            Go to AlliWant
           </Link>
         </div>
       </div>
@@ -56,8 +53,8 @@ export default function SharedList() {
 
   const { wishlist, owner, items } = data;
 
-  const unpurchased = items.filter((i) => !i.is_purchased);
-  const purchased   = items.filter((i) => i.is_purchased);
+  const unpurchased = items.filter((i) => (i.purchased_count || 0) < (i.quantity || 1));
+  const purchased   = items.filter((i) => (i.purchased_count || 0) >= (i.quantity || 1));
 
   return (
     <div className="page-with-sidebar">
@@ -161,7 +158,7 @@ export default function SharedList() {
             🎂 Want your own birthday wishlist?
           </p>
           <p style={{ opacity: 0.85, marginBottom: '1rem', fontSize: '0.9rem' }}>
-            Create yours on AllIWant — free forever.
+            Create yours on AlliWant — free forever.
           </p>
           <Link to="/register" style={{
             display: 'inline-block',

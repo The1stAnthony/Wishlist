@@ -34,7 +34,7 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">All<span style={{ color: '#111827' }}> I </span><span>Want</span> 🎂</div>
+        <div className="auth-logo">All<span style={{ color: '#111827' }}> i</span><span>Want</span> 🎂</div>
 
         <h1 className="auth-title">Welcome back</h1>
         <p className="auth-subtitle">Sign in to manage your wishlists</p>

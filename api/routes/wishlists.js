@@ -186,7 +186,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 // ── POST /api/wishlists/:id/items ───────────────────────────────────────────
 
 router.post('/:id/items', requireAuth, async (req, res) => {
-  const { name, description, price, url, affiliate_url, image_url, priority } = req.body;
+  const { name, description, price, url, affiliate_url, image_url, priority, quantity } = req.body;
   if (!name) return res.status(400).json({ error: 'Item name is required' });
 
   try {
@@ -198,8 +198,8 @@ router.post('/:id/items', requireAuth, async (req, res) => {
 
     const item = await queryOne(
       `INSERT INTO wishlist_items
-         (wishlist_id, name, description, price, url, affiliate_url, image_url, priority)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         (wishlist_id, name, description, price, url, affiliate_url, image_url, priority, quantity)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         req.params.id,
@@ -210,6 +210,7 @@ router.post('/:id/items', requireAuth, async (req, res) => {
         affiliate_url || null,
         image_url     || null,
         priority      || 2,
+        Math.max(1, parseInt(quantity) || 1),
       ]
     );
     res.status(201).json({ item });
@@ -275,6 +276,8 @@ router.delete('/items/:itemId', requireAuth, async (req, res) => {
 // If the caller is authenticated, we record who bought it.
 
 router.post('/items/:itemId/purchase', optionalAuth, async (req, res) => {
+  const qty = Math.max(1, parseInt(req.body?.qty) || 1);
+
   try {
     const item = await queryOne(
       `SELECT i.*, w.is_public FROM wishlist_items i
@@ -284,18 +287,26 @@ router.post('/items/:itemId/purchase', optionalAuth, async (req, res) => {
     );
     if (!item) return res.status(404).json({ error: 'Item not found' });
 
-    // Anonymous users can only interact with public wishlists
     if (!req.user && !item.is_public) {
       return res.status(403).json({ error: 'Sign in to purchase from private wishlists' });
     }
 
-    if (item.is_purchased) return res.status(409).json({ error: 'Item already purchased' });
+    const remaining = (item.quantity || 1) - (item.purchased_count || 0);
+    if (remaining <= 0) return res.status(409).json({ error: 'This item is already fully purchased' });
 
-    await query(
-      'UPDATE wishlist_items SET is_purchased = TRUE, purchased_by = $1 WHERE id = $2',
-      [req.user?.id || null, req.params.itemId]
+    const newCount = Math.min((item.purchased_count || 0) + qty, item.quantity || 1);
+    const fullyPurchased = newCount >= (item.quantity || 1);
+
+    const updated = await queryOne(
+      `UPDATE wishlist_items
+       SET purchased_count = $1,
+           is_purchased    = $2,
+           purchased_by    = COALESCE(purchased_by, $3)
+       WHERE id = $4
+       RETURNING *`,
+      [newCount, fullyPurchased, req.user?.id || null, req.params.itemId]
     );
-    res.json({ success: true });
+    res.json({ success: true, item: updated });
   } catch (err) {
     console.error('Purchase item error:', err);
     res.status(500).json({ error: 'Could not mark item as purchased' });

@@ -23,7 +23,8 @@ function createToken(user) {
 // ── POST /api/auth/register ─────────────────────────────────────────────────
 
 router.post('/register', async (req, res) => {
-  const { name, display_name, email, password, birthday } = req.body;
+  const { name, display_name, email, password, birthday,
+          street_address, city, state, zip_code, country } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are required' });
@@ -41,13 +42,15 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const inserted = await queryOne(
-      `INSERT INTO users (name, display_name, email, password, birthday)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO users (name, display_name, email, password, birthday,
+                          street_address, city, state, zip_code, country)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id`,
-      [name, display_name?.trim() || null, email.toLowerCase().trim(), hashedPassword, birthday || null]
+      [name, display_name?.trim() || null, email.toLowerCase().trim(), hashedPassword, birthday || null,
+       street_address || null, city || null, state || null, zip_code || null, country || 'US']
     );
 
-    const user = await queryOne(`SELECT ${PUBLIC_FIELDS} FROM users WHERE id = $1`, [inserted.id]);
+    const user = await queryOne(`SELECT ${OWNER_FIELDS} FROM users WHERE id = $1`, [inserted.id]);
 
     res.status(201).json({ user, token: createToken(user) });
   } catch (err) {
