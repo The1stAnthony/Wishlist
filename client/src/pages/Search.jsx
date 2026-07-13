@@ -5,6 +5,28 @@ import { useAuth } from '../context/AuthContext';
 import AdBanner from '../components/AdBanner';
 import '../styles/pages/search.css';
 
+const AMAZON_DOMAINS = {
+  US: 'amazon.com',   CA: 'amazon.ca',    GB: 'amazon.co.uk',
+  DE: 'amazon.de',    FR: 'amazon.fr',    IT: 'amazon.it',
+  ES: 'amazon.es',    NL: 'amazon.nl',    SE: 'amazon.se',
+  PL: 'amazon.pl',    AU: 'amazon.com.au',MX: 'amazon.com.mx',
+};
+
+function regionalizeAmazonUrl(url, country) {
+  if (!url || !country) return url;
+  const domain = AMAZON_DOMAINS[country];
+  if (!domain || domain === 'amazon.com') return url;
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes('amazon.')) return url;
+    parsed.hostname = domain;
+    parsed.searchParams.delete('tag');
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 const CATEGORY_META = {
   tech:       { label: 'Tech & Gadgets',     color: '#EDE9FE', icon: '💻' },
   home:       { label: 'Home & Kitchen',     color: '#FEF3C7', icon: '🏠' },
@@ -196,7 +218,7 @@ export default function Search() {
                   {/* Actions */}
                   <div className="product-card-actions">
                     <a
-                      href={p.amazon_url}
+                      href={regionalizeAmazonUrl(p.amazon_url, user?.country || 'US')}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="product-card-amazon"
@@ -230,7 +252,12 @@ export default function Search() {
           <p className="search-amazon-fallback-text">Didn't find what you were looking for?</p>
           <div className="search-amazon-fallback-links">
             <a
-              href={`https://www.amazon.com/s?k=${encodeURIComponent(query || 'birthday gifts')}&tag=alliwant0a-20`}
+              href={(() => {
+                const country = user?.country || 'US';
+                const domain  = AMAZON_DOMAINS[country] || 'amazon.com';
+                const tag     = country === 'US' ? '&tag=alliwant0a-20' : '';
+                return `https://www.${domain}/s?k=${encodeURIComponent(query || 'birthday gifts')}${tag}`;
+              })()}
               target="_blank"
               rel="noopener noreferrer"
               className="search-amazon-fallback-btn"
