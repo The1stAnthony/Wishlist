@@ -1,5 +1,6 @@
 const express     = require('express');
 const { v4: uuid } = require('uuid');
+const jwt         = require('jsonwebtoken');
 const { query, queryOne } = require('../../lib/db');
 const requireAuth  = require('../middleware/auth');
 
@@ -69,13 +70,46 @@ router.post('/', requireAuth, async (req, res) => {
 
 router.get('/share/:token', async (req, res) => {
   try {
+    // Optional auth — required to access friends/specific wishlists
+    let viewerId = null;
+    const authHeader = req.headers['authorization'];
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+        viewerId = decoded.id;
+      } catch { /* invalid token — treat as guest */ }
+    }
+
     const wishlist = await queryOne(
-      'SELECT * FROM wishlists WHERE share_token = $1 AND is_public = TRUE',
+      'SELECT * FROM wishlists WHERE share_token = $1',
       [req.params.token]
     );
     if (!wishlist) return res.status(404).json({ error: 'Wishlist not found or is private' });
 
-    // Resolve which name to show and whether to include the address
+    const visibility = wishlist.visibility || (wishlist.is_public ? 'public' : 'friends');
+
+    if (visibility === 'friends') {
+      if (!viewerId) return res.status(403).json({ error: 'Sign in to view this wishlist', requiresAuth: true });
+      if (viewerId !== wishlist.user_id) {
+        const friendship = await queryOne(
+          `SELECT id FROM friendships
+           WHERE ((requester_id = $1 AND addressee_id = $2) OR (requester_id = $2 AND addressee_id = $1))
+             AND status = 'accepted'`,
+          [viewerId, wishlist.user_id]
+        );
+        if (!friendship) return res.status(403).json({ error: 'This wishlist is only visible to friends' });
+      }
+    } else if (visibility === 'specific') {
+      if (!viewerId) return res.status(403).json({ error: 'Sign in to view this wishlist', requiresAuth: true });
+      if (viewerId !== wishlist.user_id) {
+        const permitted = await queryOne(
+          'SELECT 1 FROM wishlist_permissions WHERE wishlist_id = $1 AND user_id = $2',
+          [wishlist.id, viewerId]
+        );
+        if (!permitted) return res.status(403).json({ error: "You haven't been given access to this wishlist" });
+      }
+    }
+
     const ownerRow = await queryOne(
       'SELECT id, name, display_name, street_address, city, state, zip_code, country, avatar_url FROM users WHERE id = $1',
       [wishlist.user_id]
@@ -86,7 +120,7 @@ router.get('/share/:token', async (req, res) => {
       shown_name: wishlist.use_real_name
                     ? ownerRow.name
                     : (ownerRow.display_name || ownerRow.name),
-      country:    ownerRow.country || 'US',  // used for regional Amazon links
+      country:    ownerRow.country || 'US',
       ...(wishlist.share_address && {
         street_address: ownerRow.street_address,
         city:           ownerRow.city,
@@ -166,14 +200,14 @@ router.get('/:id', requireAuth, async (req, res) => {
 // ── PATCH /api/wishlists/:id ────────────────────────────────────────────────
 
 router.patch('/:id', requireAuth, async (req, res) => {
-  const { title, description, event_date, is_public, share_address, use_real_name, spoiler_free, visibility } = req.body;
+  const { title, description, event_date, is_public, share_address, use_real_name, spoiler_free, visibility, theme_image_url } = req.body;
 
   const effectiveVisibility = visibility || (is_public === false ? 'friends' : 'public');
   const effectiveIsPublic   = effectiveVisibility === 'public';
 
   try {
     const existing = await queryOne(
-      'SELECT id FROM wishlists WHERE id = $1 AND user_id = $2',
+      'SELECT id, theme_image_url FROM wishlists WHERE id = $1 AND user_id = $2',
       [req.params.id, req.user.id]
     );
     if (!existing) return res.status(404).json({ error: 'Wishlist not found' });
@@ -181,8 +215,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
     const wishlist = await queryOne(
       `UPDATE wishlists
        SET title = $1, description = $2, event_date = $3,
-           is_public = $4, share_address = $5, use_real_name = $6, spoiler_free = $7, visibility = $8
-       WHERE id = $9
+           is_public = $4, share_address = $5, use_real_name = $6, spoiler_free = $7,
+           visibility = $8, theme_image_url = $9
+       WHERE id = $10
        RETURNING *`,
       [
         title,
@@ -193,6 +228,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
         use_real_name !== undefined ? Boolean(use_real_name) : true,
         spoiler_free  !== undefined ? Boolean(spoiler_free)  : false,
         effectiveVisibility,
+        theme_image_url !== undefined ? (theme_image_url || null) : existing.theme_image_url,
         req.params.id,
       ]
     );
@@ -216,6 +252,51 @@ router.delete('/:id', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Delete wishlist error:', err);
     res.status(500).json({ error: 'Could not delete wishlist' });
+  }
+});
+
+// ── GET /api/wishlists/:id/permissions ─────────────────────────────────────
+
+router.get('/:id/permissions', requireAuth, async (req, res) => {
+  try {
+    const wishlist = await queryOne(
+      'SELECT id FROM wishlists WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (!wishlist) return res.status(404).json({ error: 'Wishlist not found' });
+    const permitted = await query(
+      `SELECT u.id, u.name, u.display_name, u.avatar_url
+       FROM wishlist_permissions wp
+       JOIN users u ON u.id = wp.user_id
+       WHERE wp.wishlist_id = $1`,
+      [req.params.id]
+    );
+    res.json({ permitted });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not fetch permissions' });
+  }
+});
+
+// ── PUT /api/wishlists/:id/permissions ──────────────────────────────────────
+
+router.put('/:id/permissions', requireAuth, async (req, res) => {
+  const { user_ids } = req.body;
+  try {
+    const wishlist = await queryOne(
+      'SELECT id FROM wishlists WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (!wishlist) return res.status(404).json({ error: 'Wishlist not found' });
+    await query('DELETE FROM wishlist_permissions WHERE wishlist_id = $1', [req.params.id]);
+    for (const uid of (user_ids || [])) {
+      await query(
+        'INSERT INTO wishlist_permissions (wishlist_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [req.params.id, uid]
+      );
+    }
+    res.json({ ok: true, count: user_ids?.length || 0 });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not update permissions' });
   }
 });
 

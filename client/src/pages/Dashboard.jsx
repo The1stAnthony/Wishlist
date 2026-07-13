@@ -40,11 +40,12 @@ function MiniAvatar({ name, url, size = 22 }) {
 }
 
 function EventCard({ item }) {
+  const coverSrc = item.theme_image || item.cover_image || item.owner_avatar || null;
   const inner = (
     <div className="event-card">
-      {/* Cover image or colored initial block */}
-      {item.cover_image ? (
-        <img src={item.cover_image} alt={item.title} className="event-card-image" />
+      {/* Cover: theme image → first item image → owner pfp → colored initial */}
+      {coverSrc ? (
+        <img src={coverSrc} alt={item.title} className="event-card-image" />
       ) : (
         <div className="event-card-placeholder" style={{ background: hashColor(item.owner_name || item.title) }}>
           <span>{(item.owner_name || item.title || '?').charAt(0).toUpperCase()}</span>
@@ -156,50 +157,57 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Combine birthday contacts + creator network + friends' upcoming into one sorted list
+  // Combine birthday contacts + friends' upcoming + creator network into one sorted list.
+  // Friends go before network so their version wins dedup (real name preferred over alias).
   const allUpcoming = [
     ...upcomingBdays.map((c) => ({
       id:           `b-${c.id}`,
+      rawId:        c.id,
       type:         'birthday',
       title:        c.contact_name,
       days_until:   c.days_until,
       link:         c.wishlist_url || null,
       isExternal:   true,
+      theme_image:  null,
       cover_image:  null,
       owner_name:   null,
       owner_avatar: null,
     })),
-    // Creator network: show alias (display_name)
-    ...networkUpcoming
-      .map((w) => ({
-        id:           `n-${w.id}`,
-        type:         'wishlist',
-        title:        w.title,
-        days_until:   daysUntilDate(w.event_date),
-        link:         `/list/${w.share_token}`,
-        isExternal:   false,
-        cover_image:  w.cover_image,
-        owner_name:   w.display_name || w.owner_name,
-        owner_avatar: w.owner_avatar,
-      }))
-      .filter((w) => w.days_until >= -7 && w.days_until <= 90),
-    // Friends: show real name (owner_name), not alias
+    // Friends first so they win dedup over creator-network entries for the same wishlist
     ...friendsUpcoming
       .map((w) => ({
         id:           `f-${w.id}`,
+        rawId:        w.id,
         type:         'wishlist',
         title:        w.title,
         days_until:   daysUntilDate(w.event_date),
         link:         `/list/${w.share_token}`,
         isExternal:   false,
+        theme_image:  w.theme_image_url || null,
         cover_image:  w.cover_image,
         owner_name:   w.owner_name,
         owner_avatar: w.owner_avatar,
       }))
       .filter((w) => w.days_until >= -7 && w.days_until <= 90),
+    // Creator network: show alias (display_name)
+    ...networkUpcoming
+      .map((w) => ({
+        id:           `n-${w.id}`,
+        rawId:        w.id,
+        type:         'wishlist',
+        title:        w.title,
+        days_until:   daysUntilDate(w.event_date),
+        link:         `/list/${w.share_token}`,
+        isExternal:   false,
+        theme_image:  w.theme_image_url || null,
+        cover_image:  w.cover_image,
+        owner_name:   w.display_name || w.owner_name,
+        owner_avatar: w.owner_avatar,
+      }))
+      .filter((w) => w.days_until >= -7 && w.days_until <= 90),
   ]
-    // Deduplicate by wishlist id (a friend who is also a creator could appear twice)
-    .filter((item, idx, arr) => arr.findIndex((x) => x.id === item.id) === idx)
+    // Deduplicate by raw numeric wishlist id — friends version (which comes first) wins
+    .filter((item, idx, arr) => arr.findIndex((x) => x.rawId === item.rawId) === idx)
     .sort((a, b) => a.days_until - b.days_until)
     .slice(0, 20);
 

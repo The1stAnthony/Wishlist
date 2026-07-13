@@ -223,7 +223,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 router.get('/feed', requireAuth, async (req, res) => {
   try {
     const wishlists = await query(
-      `SELECT w.id, w.title, w.event_date, w.share_token, w.visibility,
+      `SELECT w.id, w.title, w.event_date, w.share_token, w.visibility, w.theme_image_url,
               u.id AS owner_id, u.name AS owner_name, u.display_name, u.avatar_url AS owner_avatar,
               (SELECT image_url FROM wishlist_items
                WHERE wishlist_id = w.id AND image_url IS NOT NULL
@@ -235,7 +235,16 @@ router.get('/feed', requireAuth, async (req, res) => {
          ON (f.requester_id = $1 AND f.addressee_id = w.user_id)
          OR (f.addressee_id = $1 AND f.requester_id = w.user_id)
        WHERE f.status = 'accepted'
-         AND COALESCE(w.visibility, 'public') IN ('public', 'friends', 'specific')
+         AND (
+           COALESCE(w.visibility, 'public') = 'friends'
+           OR (
+             COALESCE(w.visibility, 'public') = 'specific'
+             AND EXISTS (
+               SELECT 1 FROM wishlist_permissions wp
+               WHERE wp.wishlist_id = w.id AND wp.user_id = $1
+             )
+           )
+         )
        ORDER BY COALESCE(
          (SELECT MAX(i.created_at) FROM wishlist_items i WHERE i.wishlist_id = w.id),
          w.created_at
@@ -257,7 +266,7 @@ router.get('/feed', requireAuth, async (req, res) => {
 router.get('/upcoming', requireAuth, async (req, res) => {
   try {
     const wishlists = await query(
-      `SELECT w.id, w.title, w.event_date, w.share_token,
+      `SELECT w.id, w.title, w.event_date, w.share_token, w.theme_image_url,
               u.id AS owner_id, u.name AS owner_name, u.display_name, u.avatar_url AS owner_avatar,
               (SELECT image_url FROM wishlist_items
                WHERE wishlist_id = w.id AND image_url IS NOT NULL

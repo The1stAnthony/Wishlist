@@ -40,22 +40,36 @@ export default function Wishlist() {
 
   const { showToast } = useToast();
 
-  const [wishlist,   setWishlist]   = useState(null);
-  const [items,      setItems]      = useState([]);
-  const [form,       setForm]       = useState(EMPTY_FORM);
-  const [loading,    setLoading]    = useState(true);
-  const [saving,     setSaving]     = useState(false);
-  const [error,      setError]      = useState('');
-  const [enriching,  setEnriching]  = useState(false);
-  const [enrichHint, setEnrichHint] = useState('');
+  const [wishlist,    setWishlist]    = useState(null);
+  const [items,       setItems]       = useState([]);
+  const [form,        setForm]        = useState(EMPTY_FORM);
+  const [loading,     setLoading]     = useState(true);
+  const [saving,      setSaving]      = useState(false);
+  const [error,       setError]       = useState('');
+  const [enriching,   setEnriching]   = useState(false);
+  const [enrichHint,  setEnrichHint]  = useState('');
   const [editingDate, setEditingDate] = useState(false);
   const [dateValue,   setDateValue]   = useState('');
+  const [friends,     setFriends]     = useState([]);
+  const [permittedIds, setPermittedIds] = useState(new Set());
+  const [themeUrl,    setThemeUrl]    = useState('');
+  const [savingTheme, setSavingTheme] = useState(false);
 
   useEffect(() => {
-    axios.get(`/api/wishlists/${id}`)
-      .then((res) => {
-        setWishlist(res.data.wishlist);
+    Promise.all([
+      axios.get(`/api/wishlists/${id}`),
+      axios.get('/api/friendships').catch(() => ({ data: { friends: [] } })),
+    ]).then(([res, friendsRes]) => {
+        const w = res.data.wishlist;
+        setWishlist(w);
         setItems(res.data.items);
+        setThemeUrl(w.theme_image_url || '');
+        setFriends(friendsRes.data.friends || []);
+        if (w.visibility === 'specific') {
+          axios.get(`/api/wishlists/${id}/permissions`)
+            .then((r) => setPermittedIds(new Set((r.data.permitted || []).map((u) => u.id))))
+            .catch(() => {});
+        }
       })
       .catch(() => {
         setError('Wishlist not found or you don\'t have access.');
@@ -170,8 +184,41 @@ export default function Wishlist() {
         ...wishlist, visibility: vis,
       });
       setWishlist(res.data.wishlist);
+      if (vis === 'specific' && permittedIds.size === 0) {
+        axios.get(`/api/wishlists/${wishlist.id}/permissions`)
+          .then((r) => setPermittedIds(new Set((r.data.permitted || []).map((u) => u.id))))
+          .catch(() => {});
+      }
     } catch {
       setError('Could not update visibility.');
+    }
+  }
+
+  async function handlePermissionToggle(friendId) {
+    const next = new Set(permittedIds);
+    if (next.has(friendId)) next.delete(friendId); else next.add(friendId);
+    setPermittedIds(next);
+    try {
+      await axios.put(`/api/wishlists/${wishlist.id}/permissions`, {
+        user_ids: [...next],
+      });
+    } catch {
+      setError('Could not update permissions.');
+    }
+  }
+
+  async function handleSaveTheme() {
+    setSavingTheme(true);
+    try {
+      const res = await axios.patch(`/api/wishlists/${wishlist.id}`, {
+        ...wishlist, theme_image_url: themeUrl.trim() || null,
+      });
+      setWishlist(res.data.wishlist);
+      showToast('✅ Theme image saved!');
+    } catch {
+      setError('Could not save theme image.');
+    } finally {
+      setSavingTheme(false);
     }
   }
 
@@ -246,6 +293,70 @@ export default function Wishlist() {
           </Link>
         </div>
 
+        {/* ── Theme image ──────────────────────────────────────────────────── */}
+        <div style={{
+          padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)',
+          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+          marginBottom: '0.75rem',
+        }}>
+          <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text)', marginBottom: '0.5rem' }}>
+            🖼 Wishlist theme image
+          </p>
+          {wishlist?.theme_image_url && (
+            <img
+              src={wishlist.theme_image_url}
+              alt="Theme"
+              style={{ width: '100%', maxHeight: 140, objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: '0.5rem' }}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              type="url"
+              className="form-input"
+              placeholder="Paste an image URL…"
+              value={themeUrl}
+              onChange={(e) => setThemeUrl(e.target.value)}
+              style={{ flex: 1, fontSize: '0.8rem' }}
+            />
+            <button
+              className="btn-secondary"
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.875rem', flexShrink: 0 }}
+              onClick={handleSaveTheme}
+              disabled={savingTheme}
+            >
+              {savingTheme ? 'Saving…' : 'Save'}
+            </button>
+            {wishlist?.theme_image_url && (
+              <button
+                className="btn-ghost"
+                style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', color: '#EF4444', flexShrink: 0 }}
+                onClick={async () => {
+                  setSavingTheme(true);
+                  try {
+                    const res = await axios.patch(`/api/wishlists/${wishlist.id}`, {
+                      ...wishlist, theme_image_url: null,
+                    });
+                    setWishlist(res.data.wishlist);
+                    setThemeUrl('');
+                    showToast('Theme image removed.');
+                  } catch {
+                    setError('Could not remove theme image.');
+                  } finally {
+                    setSavingTheme(false);
+                  }
+                }}
+                disabled={savingTheme}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.35rem' }}>
+            This image appears as the wishlist cover in event cards. Falls back to your profile picture.
+          </p>
+        </div>
+
         {/* ── Visibility selector ──────────────────────────────────────────── */}
         <div style={{
           padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)',
@@ -257,15 +368,15 @@ export default function Wishlist() {
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             {[
-              { value: 'public',   label: '🌎 Public',          tip: 'Anyone with the link can view this wishlist.' },
+              { value: 'public',   label: '🌎 Public',          tip: 'Anyone with the link can view this wishlist.', disabled: !user?.creator_mode, disabledTip: 'Enable creator mode in your profile to make wishlists public.' },
               { value: 'friends',  label: '👥 Friends',         tip: 'Only your accepted friends can view this wishlist.' },
-              { value: 'specific', label: '🔒 Specific people', tip: 'Only friends you hand-pick can view this wishlist.', disabled: true },
-            ].map(({ value, label, tip, disabled }) => (
+              { value: 'specific', label: '🔒 Specific people', tip: 'Only friends you hand-pick can view this wishlist.', disabled: friends.length === 0, disabledTip: 'Add friends first to use this feature.' },
+            ].map(({ value, label, tip, disabled, disabledTip }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => !disabled && handleVisibilityChange(value)}
-                title={disabled ? 'Coming soon — add friends first' : tip}
+                title={disabled ? disabledTip : tip}
                 style={{
                   padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)',
                   fontSize: '0.8rem', fontWeight: 600,
@@ -288,6 +399,39 @@ export default function Wishlist() {
               ? 'Only your accepted friends can view this wishlist.'
               : 'Only specific friends you choose can view this wishlist.'}
           </p>
+
+          {/* Friend picker — only shown when visibility is 'specific' */}
+          {currentVisibility === 'specific' && friends.length > 0 && (
+            <div style={{ marginTop: '0.75rem', borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem' }}>
+              <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
+                Choose who can see this wishlist:
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {friends.map((f) => (
+                  <label key={f.friend_id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontSize: '0.82rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={permittedIds.has(f.friend_id)}
+                      onChange={() => handlePermissionToggle(f.friend_id)}
+                      style={{ accentColor: 'var(--color-primary)', width: 15, height: 15 }}
+                    />
+                    {f.avatar_url
+                      ? <img src={f.avatar_url} alt={f.friend_name} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
+                      : <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#7C3AED', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {(f.display_name || f.friend_name || '?').charAt(0).toUpperCase()}
+                        </div>
+                    }
+                    <span style={{ color: 'var(--color-text)' }}>{f.display_name || f.friend_name}</span>
+                  </label>
+                ))}
+              </div>
+              {permittedIds.size === 0 && (
+                <p style={{ fontSize: '0.72rem', color: '#D97706', marginTop: '0.4rem' }}>
+                  Select at least one friend to allow access.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Share banner ─────────────────────────────────────────────────── */}

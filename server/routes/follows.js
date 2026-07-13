@@ -155,7 +155,7 @@ router.delete('/:handle', requireAuth, async (req, res) => {
 router.get('/feed', requireAuth, async (req, res) => {
   try {
     const wishlists = await query(
-      `SELECT w.id, w.title, w.event_date, w.share_token,
+      `SELECT w.id, w.title, w.event_date, w.share_token, w.theme_image_url,
               u.id AS owner_id, u.display_name, u.name AS owner_name, u.avatar_url AS owner_avatar,
               (SELECT image_url FROM wishlist_items
                WHERE wishlist_id = w.id AND image_url IS NOT NULL
@@ -164,6 +164,7 @@ router.get('/feed', requireAuth, async (req, res) => {
        JOIN users u ON u.id = w.user_id
        JOIN follows f ON f.followed_id = w.user_id
        WHERE f.follower_id = $1
+         AND u.creator_mode = TRUE
          AND COALESCE(w.visibility, 'public') = 'public'
        ORDER BY COALESCE(
          (SELECT MAX(i.created_at) FROM wishlist_items i WHERE i.wishlist_id = w.id),
@@ -185,7 +186,7 @@ router.get('/feed', requireAuth, async (req, res) => {
 router.get('/network-upcoming', requireAuth, async (req, res) => {
   try {
     const wishlists = await query(
-      `SELECT w.id, w.title, w.event_date, w.share_token,
+      `SELECT w.id, w.title, w.event_date, w.share_token, w.theme_image_url,
               u.id AS owner_id, u.display_name, u.name AS owner_name, u.avatar_url AS owner_avatar,
               (SELECT image_url FROM wishlist_items
                WHERE wishlist_id = w.id AND image_url IS NOT NULL
@@ -194,6 +195,7 @@ router.get('/network-upcoming', requireAuth, async (req, res) => {
        JOIN users u ON u.id = w.user_id
        JOIN follows f ON f.followed_id = w.user_id
        WHERE f.follower_id = $1
+         AND u.creator_mode = TRUE
          AND COALESCE(w.visibility, 'public') = 'public'
          AND w.event_date IS NOT NULL
          AND w.event_date::date >= CURRENT_DATE - INTERVAL '7 days'

@@ -39,14 +39,24 @@ export default function SharedList() {
   const { token } = useParams();
   const { user }  = useAuth();
 
-  const [data,    setData]    = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState('');
+  const [data,         setData]         = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState('');
+  const [requiresAuth, setRequiresAuth] = useState(false);
 
   useEffect(() => {
     axios.get(`/api/wishlists/share/${token}`)
       .then((res) => setData(res.data))
-      .catch(() => setError('This wishlist is private or no longer exists.'))
+      .catch((err) => {
+        if (err.response?.status === 403) {
+          setRequiresAuth(!!err.response.data?.requiresAuth);
+          setError(err.response.data?.requiresAuth
+            ? 'Sign in to view this wishlist.'
+            : 'You don\'t have access to this wishlist.');
+        } else {
+          setError('This wishlist is private or no longer exists.');
+        }
+      })
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -68,11 +78,23 @@ export default function SharedList() {
     return (
       <div className="page-loading">
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎁</p>
+          <p style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🔒</p>
           <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{error}</p>
-          <Link to="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>
-            Go to All I Want
-          </Link>
+          {requiresAuth && !user && (
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1rem', flexWrap: 'wrap' }}>
+              <Link to={`/login?next=${encodeURIComponent(window.location.pathname)}`} className="btn-primary">
+                Sign in
+              </Link>
+              <Link to="/register" className="btn-ghost">
+                Create account
+              </Link>
+            </div>
+          )}
+          {!requiresAuth && (
+            <Link to="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>
+              Go to All I Want
+            </Link>
+          )}
         </div>
       </div>
     );
