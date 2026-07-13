@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
   if (!mailTo) {
     console.warn('[CONTACT] CONTACT_EMAIL env var not set — logging to console instead');
   }
-  const mailSubject = `All I Want: ${name.trim()} — ${subject} [#${refId}]`;
+  const mailSubject = `🎂 All I Want: ${name.trim()} — ${subject} [#${refId}]`;
 
   const body = [
     `From:    ${name.trim()}${email ? ` <${email}>` : ''}`,

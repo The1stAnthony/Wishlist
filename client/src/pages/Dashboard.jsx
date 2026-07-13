@@ -20,6 +20,7 @@ function daysUntilDate(dateStr) {
 }
 
 function DaysTag({ n }) {
+  if (n < 0)   return <span className="event-days-tag event-days-tag--past">{Math.abs(n)}d ago</span>;
   if (n === 0) return <span className="event-days-tag event-days-tag--today">🎉 Today!</span>;
   if (n === 1) return <span className="event-days-tag event-days-tag--soon">Tomorrow</span>;
   if (n <= 7)  return <span className="event-days-tag event-days-tag--soon">in {n}d</span>;
@@ -173,7 +174,7 @@ export default function Dashboard() {
         owner_name:   w.display_name || w.owner_name,
         owner_avatar: w.owner_avatar,
       }))
-      .filter((w) => w.days_until >= 0 && w.days_until <= 90),
+      .filter((w) => w.days_until >= -7 && w.days_until <= 90),
     // Friends: show real name (owner_name), not alias
     ...friendsUpcoming
       .map((w) => ({
@@ -187,7 +188,7 @@ export default function Dashboard() {
         owner_name:   w.owner_name,
         owner_avatar: w.owner_avatar,
       }))
-      .filter((w) => w.days_until >= 0 && w.days_until <= 90),
+      .filter((w) => w.days_until >= -7 && w.days_until <= 90),
   ]
     // Deduplicate by wishlist id (a friend who is also a creator could appear twice)
     .filter((item, idx, arr) => arr.findIndex((x) => x.id === item.id) === idx)

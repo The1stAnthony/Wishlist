@@ -6,6 +6,31 @@ import AdBanner from '../components/AdBanner';
 import JsonLd from '../components/JsonLd';
 import { useAuth } from '../context/AuthContext';
 
+const AMAZON_DOMAINS = {
+  US: 'amazon.com',   CA: 'amazon.ca',    GB: 'amazon.co.uk',
+  DE: 'amazon.de',    FR: 'amazon.fr',    IT: 'amazon.it',
+  ES: 'amazon.es',    NL: 'amazon.nl',    SE: 'amazon.se',
+  PL: 'amazon.pl',    AU: 'amazon.com.au',JP: 'amazon.co.jp',
+  IN: 'amazon.in',    MX: 'amazon.com.mx',BR: 'amazon.com.br',
+};
+
+function regionalizeAmazonUrl(url, country) {
+  if (!url || !country) return url;
+  const domain = AMAZON_DOMAINS[country];
+  if (!domain || domain === 'amazon.com') return url;
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes('amazon.')) return url;
+    parsed.hostname = domain;
+    // Strip the US affiliate tag — it doesn't earn on non-US stores.
+    // TODO: add per-country tags here once enrolled in each country's Associates program.
+    parsed.searchParams.delete('tag');
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 /**
  * The public-facing view of a wishlist — shown when someone opens a share link.
  * Anyone can view this page without being logged in.
@@ -56,8 +81,18 @@ export default function SharedList() {
 
   const { wishlist, owner, items } = data;
 
-  const unpurchased = items.filter((i) => (i.purchased_count || 0) < (i.quantity || 1));
-  const purchased   = items.filter((i) => (i.purchased_count || 0) >= (i.quantity || 1));
+  const ownerCountry = owner?.country || 'US';
+
+  function regionalize(item) {
+    if (ownerCountry === 'US') return item;
+    const regional = regionalizeAmazonUrl(item.affiliate_url || item.url, ownerCountry);
+    return regional !== (item.affiliate_url || item.url)
+      ? { ...item, affiliate_url: regional }
+      : item;
+  }
+
+  const unpurchased = items.filter((i) => (i.purchased_count || 0) < (i.quantity || 1)).map(regionalize);
+  const purchased   = items.filter((i) => (i.purchased_count || 0) >= (i.quantity || 1)).map(regionalize);
 
   const listSchema = {
     '@context': 'https://schema.org',

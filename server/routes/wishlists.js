@@ -75,7 +75,7 @@ router.get('/share/:token', async (req, res) => {
 
     // Resolve which name to show and whether to include the address
     const ownerRow = await queryOne(
-      'SELECT id, name, display_name, street_address, city, state, zip_code, country FROM users WHERE id = $1',
+      'SELECT id, name, display_name, street_address, city, state, zip_code, country, avatar_url FROM users WHERE id = $1',
       [wishlist.user_id]
     );
 
@@ -84,12 +84,12 @@ router.get('/share/:token', async (req, res) => {
       shown_name: wishlist.use_real_name
                     ? ownerRow.name
                     : (ownerRow.display_name || ownerRow.name),
+      country:    ownerRow.country || 'US',  // used for regional Amazon links
       ...(wishlist.share_address && {
         street_address: ownerRow.street_address,
         city:           ownerRow.city,
         state:          ownerRow.state,
         zip_code:       ownerRow.zip_code,
-        country:        ownerRow.country,
       }),
     };
 
@@ -247,6 +247,37 @@ router.post('/:id/items', requireAuth, async (req, res) => {
         Math.max(1, parseInt(quantity) || 1),
       ]
     );
+
+    // Auto-link: if the same URL exists in another wishlist owned by this user,
+    // assign them the same item_group_id so purchases sync across lists.
+    if (url) {
+      const sibling = await queryOne(
+        `SELECT i.id, i.item_group_id
+         FROM wishlist_items i
+         JOIN wishlists w ON w.id = i.wishlist_id
+         WHERE w.user_id = $1 AND i.url = $2 AND i.id != $3
+         LIMIT 1`,
+        [req.user.id, url, item.id]
+      );
+      if (sibling) {
+        const groupId = sibling.item_group_id || uuid().replace(/-/g, '');
+        if (!sibling.item_group_id) {
+          // Seed group id onto the sibling (and any other same-URL items)
+          await query(
+            `UPDATE wishlist_items SET item_group_id = $1
+             WHERE url = $2
+               AND wishlist_id IN (SELECT id FROM wishlists WHERE user_id = $3)`,
+            [groupId, url, req.user.id]
+          );
+        }
+        await query(
+          'UPDATE wishlist_items SET item_group_id = $1 WHERE id = $2',
+          [groupId, item.id]
+        );
+        item.item_group_id = groupId;
+      }
+    }
+
     res.status(201).json({ item });
   } catch (err) {
     console.error('Add item error:', err);
@@ -336,6 +367,19 @@ router.post('/items/:itemId/purchase', requireAuth, async (req, res) => {
        RETURNING *`,
       [newCount, fullyPurchased, req.user.id, req.params.itemId]
     );
+
+    // Cross-wishlist sync: propagate purchase state to all linked items
+    if (item.item_group_id) {
+      await query(
+        `UPDATE wishlist_items
+         SET purchased_count = LEAST(quantity, $1),
+             is_purchased    = LEAST(quantity, $1) >= quantity,
+             purchased_by    = COALESCE(purchased_by, $2)
+         WHERE item_group_id = $3 AND id != $4`,
+        [newCount, req.user.id, item.item_group_id, req.params.itemId]
+      );
+    }
+
     res.json({ success: true, item: updated });
   } catch (err) {
     console.error('Purchase item error:', err);

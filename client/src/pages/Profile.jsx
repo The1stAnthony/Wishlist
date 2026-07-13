@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import '../styles/pages/profile.css';
 
 // Resize an image File to a max dimension, returns a base64 JPEG data URL
@@ -28,8 +29,9 @@ function resizeImageFile(file, maxSize = 200) {
 
 export default function Profile() {
   const { user, updateUser, logout } = useAuth();
-  const navigate    = useNavigate();
+  const navigate     = useNavigate();
   const fileInputRef = useRef(null);
+  const { showToast } = useToast();
 
   const [form, setForm] = useState({
     name:           '',
@@ -532,7 +534,7 @@ export default function Profile() {
             </p>
             <button
               type="button"
-              onClick={() => navigator.clipboard.writeText(`https://alliwant.xyz/u/${user.display_name}`)}
+              onClick={() => { navigator.clipboard.writeText(`https://alliwant.xyz/u/${user.display_name}`); showToast('✅ Profile link copied!'); }}
               style={{
                 fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)',
                 border: '1px solid var(--color-border)', background: 'var(--color-background)',

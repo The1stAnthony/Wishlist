@@ -118,6 +118,11 @@
   color: #92400E;
 }
 
+.event-days-tag--past {
+  background-color: #F3F4F6;
+  color: #9CA3AF;
+}
+
 /* ── Wishlists grid ───────────────────────────────────────────────────────── */
 .wishlists-grid {
   @apply grid gap-4;

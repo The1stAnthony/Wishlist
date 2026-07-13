@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import '../styles/pages/friends.css';
 
 const AVATAR_COLORS = ['#1F2937', '#DC2626', '#2563EB', '#059669', '#D97706', '#7C3AED', '#DB2777'];
@@ -45,7 +46,8 @@ function RowPopup({ onClose, children }) {
 }
 
 export default function Friends() {
-  const { user } = useAuth();
+  const { user }      = useAuth();
+  const { showToast } = useToast();
   const [view, setView] = useState('main'); // 'main' | 'followers'
 
   // Followers (creator mode)
@@ -260,42 +262,6 @@ export default function Friends() {
         </button>
       )}
 
-      {/* ── Find & Follow creators ─────────────────────────────────────────── */}
-      <div style={{ marginTop: user?.creator_mode ? '2rem' : '0', marginBottom: '2rem' }}>
-        <h2 className="friends-section-title" style={{ marginBottom: '0.75rem' }}>Find Creators</h2>
-        <div style={{ position: 'relative' }}>
-          <input
-            className="form-input"
-            placeholder="Search by @handle…"
-            value={searchQ}
-            onChange={(e) => setSearchQ(e.target.value)}
-          />
-          {searching && (
-            <span style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-              Searching…
-            </span>
-          )}
-        </div>
-
-        {searchResults.length > 0 && (
-          <div className="friends-list" style={{ marginTop: '0.75rem' }}>
-            {searchResults.map((u) => (
-              <div key={u.id} className="friends-row">
-                <Avatar name={u.display_name} url={u.avatar_url} />
-                <Link to={`/u/${u.display_name}`} className="friends-handle" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>
-                  @{u.display_name}
-                </Link>
-                {u.i_follow ? (
-                  <button className="friends-btn friends-btn-unfollow" onClick={() => handleUnfollow(u.display_name)}>Unfollow</button>
-                ) : (
-                  <button className="friends-btn friends-btn-follow-back" onClick={() => handleFollow(u.display_name)}>Follow</button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* ── Friends & Family ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showInvitePanel ? '0.5rem' : '0' }}>
         <h2 className="friends-section-title">Friends &amp; Family</h2>
@@ -324,7 +290,7 @@ export default function Friends() {
                 <button
                   className="friends-btn friends-btn-follow-back"
                   style={{ flexShrink: 0 }}
-                  onClick={() => { navigator.clipboard.writeText(inviteUrl); }}
+                  onClick={() => { navigator.clipboard.writeText(inviteUrl); showToast('✅ Invite link copied!'); }}
                 >
                   Copy
                 </button>
@@ -443,6 +409,48 @@ export default function Friends() {
           )}
         </div>
       )}
+
+      {/* ── Find & Follow creators ─────────────────────────────────────────── */}
+      <div style={{ marginTop: '2.5rem' }}>
+        <h2 className="friends-section-title" style={{ marginBottom: '0.75rem' }}>Find Creators</h2>
+        <div style={{ position: 'relative' }}>
+          <input
+            className="form-input"
+            placeholder="Search by @handle…"
+            value={searchQ}
+            onChange={(e) => setSearchQ(e.target.value)}
+          />
+          {searching && (
+            <span style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+              Searching…
+            </span>
+          )}
+        </div>
+
+        {searchResults.length > 0 && (
+          <div className="friends-list" style={{ marginTop: '0.75rem' }}>
+            {searchResults.map((u) => (
+              <div key={u.id} className="friends-row">
+                <Avatar name={u.display_name} url={u.avatar_url} />
+                <Link to={`/u/${u.display_name}`} className="friends-handle" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>
+                  @{u.display_name}
+                </Link>
+                {u.i_follow ? (
+                  <button className="friends-btn friends-btn-unfollow" onClick={() => handleUnfollow(u.display_name)}>Unfollow</button>
+                ) : (
+                  <button className="friends-btn friends-btn-follow-back" onClick={() => handleFollow(u.display_name)}>Follow</button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {searchQ.length === 0 && (
+          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+            Type a handle to search for creators to follow.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

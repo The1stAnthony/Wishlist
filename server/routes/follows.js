@@ -163,8 +163,13 @@ router.get('/feed', requireAuth, async (req, res) => {
        FROM wishlists w
        JOIN users u ON u.id = w.user_id
        JOIN follows f ON f.followed_id = w.user_id
-       WHERE f.follower_id = $1 AND w.is_public = TRUE
-       ORDER BY w.created_at DESC
+       WHERE f.follower_id = $1
+         AND COALESCE(w.visibility, 'public') = 'public'
+         AND (w.event_date IS NULL OR w.event_date >= CURRENT_DATE - INTERVAL '7 days')
+       ORDER BY
+         CASE WHEN w.event_date IS NULL THEN 1 ELSE 0 END,
+         w.event_date ASC,
+         w.created_at DESC
        LIMIT 20`,
       [req.user.id]
     );
@@ -189,7 +194,10 @@ router.get('/network-upcoming', requireAuth, async (req, res) => {
        FROM wishlists w
        JOIN users u ON u.id = w.user_id
        JOIN follows f ON f.followed_id = w.user_id
-       WHERE f.follower_id = $1 AND w.is_public = TRUE AND w.event_date IS NOT NULL
+       WHERE f.follower_id = $1
+         AND COALESCE(w.visibility, 'public') = 'public'
+         AND w.event_date IS NOT NULL
+         AND w.event_date >= CURRENT_DATE - INTERVAL '7 days'
        ORDER BY w.event_date ASC
        LIMIT 10`,
       [req.user.id]

@@ -235,7 +235,7 @@ router.get('/feed', requireAuth, async (req, res) => {
          ON (f.requester_id = $1 AND f.addressee_id = w.user_id)
          OR (f.addressee_id = $1 AND f.requester_id = w.user_id)
        WHERE f.status = 'accepted'
-         AND w.visibility IN ('public', 'friends', 'specific')
+         AND COALESCE(w.visibility, 'public') IN ('public', 'friends', 'specific')
          AND (w.event_date IS NULL OR w.event_date >= CURRENT_DATE - INTERVAL '7 days')
        ORDER BY
          CASE WHEN w.event_date IS NULL THEN 1 ELSE 0 END,
@@ -270,8 +270,8 @@ router.get('/upcoming', requireAuth, async (req, res) => {
          OR (f.addressee_id = $1 AND f.requester_id = w.user_id)
        WHERE f.status = 'accepted'
          AND w.event_date IS NOT NULL
-         AND w.event_date >= CURRENT_DATE
-         AND w.visibility IN ('public', 'friends', 'specific')
+         AND w.event_date >= CURRENT_DATE - INTERVAL '7 days'
+         AND COALESCE(w.visibility, 'public') IN ('public', 'friends', 'specific')
        ORDER BY w.event_date ASC
        LIMIT 10`,
       [req.user.id]

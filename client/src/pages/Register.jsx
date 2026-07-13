@@ -18,7 +18,11 @@ export default function Register() {
   const [loading,       setLoading]       = useState(false);
 
   function handleChange(e) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    let value = e.target.value;
+    if (e.target.name === 'display_name') {
+      value = value.replace(/^@+/, '').replace(/[^a-zA-Z0-9_]/g, '');
+    }
+    setForm((prev) => ({ ...prev, [e.target.name]: value }));
   }
 
   // Show match/mismatch hint only after the user starts typing in confirm field
@@ -89,21 +93,28 @@ export default function Register() {
           {/* Display name / pseudo name */}
           <div>
             <label className="form-label" htmlFor="display_name">
-              Display name{' '}
+              Handle / Display name{' '}
               <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>
-                (shown publicly on your wishlists — can be a nickname or @handle)
+                (optional — letters, numbers, underscores only)
               </span>
             </label>
-            <input
-              id="display_name"
-              name="display_name"
-              type="text"
-              className="form-input"
-              placeholder="e.g. @QueenSarah, BirthdayGirl, xXGamerXx"
-              value={form.display_name}
-              onChange={handleChange}
-              autoComplete="nickname"
-            />
+            <div style={{ position: 'relative' }}>
+              <span style={{
+                position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)',
+                color: 'var(--color-text-muted)', fontWeight: 600, pointerEvents: 'none',
+              }}>@</span>
+              <input
+                id="display_name"
+                name="display_name"
+                type="text"
+                className="form-input"
+                placeholder="BirthdayGirl"
+                value={form.display_name}
+                onChange={handleChange}
+                autoComplete="nickname"
+                style={{ paddingLeft: '1.75rem' }}
+              />
+            </div>
           </div>
 
           {/* Email */}

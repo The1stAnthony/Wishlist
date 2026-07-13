@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import AdBanner from '../components/AdBanner';
 import WishlistItem from '../components/WishlistItem';
 import '../styles/pages/wishlist.css';
@@ -15,13 +16,14 @@ export default function Wishlist() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const { showToast } = useToast();
+
   const [wishlist,   setWishlist]   = useState(null);
   const [items,      setItems]      = useState([]);
   const [form,       setForm]       = useState(EMPTY_FORM);
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState('');
-  const [copied,     setCopied]     = useState(false);
   const [enriching,  setEnriching]  = useState(false);
   const [enrichHint, setEnrichHint] = useState('');
   const [editingDate, setEditingDate] = useState(false);
@@ -127,10 +129,7 @@ export default function Wishlist() {
 
   function copyShareLink() {
     const url = `${window.location.origin}/list/${wishlist.share_token}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    navigator.clipboard.writeText(url).then(() => showToast('✅ Link copied to clipboard!'));
   }
 
   if (loading) return <div className="page-loading">Loading wishlist…</div>;
@@ -268,7 +267,7 @@ export default function Wishlist() {
               <p className="share-banner-url">{shareUrl}</p>
             </div>
             <button className="share-banner-btn" onClick={copyShareLink}>
-              {copied ? '✅ Copied!' : 'Copy link'}
+              Copy link
             </button>
           </div>
         )}
