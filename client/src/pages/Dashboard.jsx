@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import AdBanner from '../components/AdBanner';
+import AdBanner, { AD_SLOTS } from '../components/AdBanner';
 import '../styles/pages/dashboard.css';
 
 const AVATAR_COLORS = ['#7C3AED', '#DC2626', '#2563EB', '#059669', '#D97706', '#DB2777', '#1F2937'];
@@ -474,7 +474,7 @@ export default function Dashboard() {
 
         {/* ── Ad banner between sections ────────────────────────────────────── */}
         <div style={{ marginTop: '2rem' }}>
-          <AdBanner format="horizontal" />
+          <AdBanner format="horizontal" slot={AD_SLOTS.horizontal} />
         </div>
 
         {/* ── Creators' Wishlists ───────────────────────────────────────────── */}
@@ -516,12 +516,18 @@ export default function Dashboard() {
             </div>
           )}
         </section>
+
+        {/* ── Ad banner after Creators' Wishlists ──────────────────────────── */}
+        <div style={{ marginTop: '2rem' }}>
+          <AdBanner format="horizontal" slot={AD_SLOTS.horizontal} />
+        </div>
+
       </div>
 
       {/* ── Right sidebar ads (start at Friends' Wishlists level) ────────────── */}
       <aside className="sidebar-ads ad-sidebar" style={{ paddingTop: '2rem' }}>
-        <AdBanner format="sidebar" />
-        <AdBanner format="sidebar" />
+        <AdBanner format="sidebar" slot={AD_SLOTS.vertical} />
+        <AdBanner format="sidebar" slot={AD_SLOTS.square} />
       </aside>
     </div>
   );

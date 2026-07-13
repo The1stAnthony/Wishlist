@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import AdBanner from '../components/AdBanner';
+import AdBanner, { AD_SLOTS } from '../components/AdBanner';
 import '../styles/pages/search.css';
 
 const AMAZON_DOMAINS = {
@@ -38,10 +38,36 @@ const CATEGORY_META = {
   food:       { label: 'Food & Drink',       color: '#FFF7ED', icon: '🍫' },
 };
 
-const EMPTY_WRITE_IN = { name: '', url: '', description: '', price: '' };
+const EMPTY_WRITE_IN = { name: '', url: '', description: '', price: '', image_url: '', quantity: 1, priority: 2 };
+
+// Client-side image compression — keeps modal uploads lightweight
+function compressImage(file, maxSide = 800) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (Math.max(w, h) > maxSide) {
+          if (w > h) { h = Math.round(h * maxSide / w); w = maxSide; }
+          else       { w = Math.round(w * maxSide / h); h = maxSide; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function Search() {
   const { user } = useAuth();
+  const imageInputRef = useRef(null);
 
   // Products / search
   const [query,          setQuery]          = useState('');
@@ -50,14 +76,19 @@ export default function Search() {
   const [searching,      setSearching]      = useState(false);
 
   // Modal: null | 'product' | 'write-in' | 'auth-prompt'
-  const [modalMode,      setModalMode]      = useState(null);
-  const [modalProduct,   setModalProduct]   = useState(null);
-  const [wishlists,      setWishlists]      = useState([]);
+  const [modalMode,       setModalMode]       = useState(null);
+  const [modalProduct,    setModalProduct]    = useState(null);
+  const [wishlists,       setWishlists]       = useState([]);
   const [selectedListIds, setSelectedListIds] = useState(new Set());
+
+  // Product modal overrides
+  const [productQuantity, setProductQuantity] = useState(1);
+  const [productPriority, setProductPriority] = useState(2);
 
   // Write-in form
   const [writeInForm, setWriteInForm] = useState(EMPTY_WRITE_IN);
   const [scraping,    setScraping]    = useState(false);
+  const [scrapeError, setScrapeError] = useState('');
 
   // Status
   const [adding,     setAdding]     = useState(false);
@@ -66,7 +97,6 @@ export default function Search() {
 
   useEffect(() => { document.title = 'Find Gifts – All I Want'; }, []);
 
-  // Load all products on mount
   useEffect(() => {
     axios.get('/api/search/products')
       .then((r) => setProducts(r.data.products))
@@ -119,8 +149,11 @@ export default function Search() {
     setModalProduct(null);
     setSelectedListIds(new Set());
     setWriteInForm(EMPTY_WRITE_IN);
+    setProductQuantity(1);
+    setProductPriority(2);
     setAddSuccess('');
     setAddError('');
+    setScrapeError('');
   }
 
   function toggleList(id) {
@@ -136,6 +169,8 @@ export default function Search() {
     if (!user) { setModalProduct(product); setModalMode('auth-prompt'); return; }
     setModalProduct(product);
     setSelectedListIds(new Set());
+    setProductQuantity(1);
+    setProductPriority(2);
     setAddSuccess('');
     setAddError('');
     setModalMode('product');
@@ -148,6 +183,7 @@ export default function Search() {
     setSelectedListIds(new Set());
     setAddSuccess('');
     setAddError('');
+    setScrapeError('');
     setModalMode('write-in');
     loadWishlists();
   }
@@ -155,20 +191,36 @@ export default function Search() {
   async function scrapeUrl() {
     if (!writeInForm.url.trim()) return;
     setScraping(true);
+    setScrapeError('');
     try {
-      const r = await axios.get(`/api/scrape?url=${encodeURIComponent(writeInForm.url.trim())}`);
+      // Scraper is POST /api/scrape with { url } in body — requires auth
+      const r = await axios.post('/api/scrape', { url: writeInForm.url.trim() });
       const d = r.data;
       setWriteInForm((prev) => ({
         ...prev,
-        name:        d.title       || prev.name,
+        name:        d.name        || prev.name,
         description: d.description || prev.description,
         price:       d.price != null ? String(d.price) : prev.price,
+        image_url:   d.image_url   || prev.image_url,
       }));
-    } catch {
-      // silent — user fills manually
+    } catch (err) {
+      const msg = err.response?.data?.error;
+      setScrapeError(msg || 'Could not fetch that URL — fill in manually.');
     } finally {
       setScraping(false);
     }
+  }
+
+  async function handleImageUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImage(file, 800);
+      setWriteInForm((prev) => ({ ...prev, image_url: compressed }));
+    } catch {
+      // silent — user can still paste a URL
+    }
+    e.target.value = '';
   }
 
   async function addToSelectedLists() {
@@ -182,16 +234,20 @@ export default function Search() {
           description: writeInForm.description || undefined,
           price:       writeInForm.price ? parseFloat(writeInForm.price) : undefined,
           url:         writeInForm.url.trim() || undefined,
+          image_url:   writeInForm.image_url  || undefined,
+          quantity:    parseInt(writeInForm.quantity) || 1,
+          priority:    parseInt(writeInForm.priority) || 2,
         }
       : {
           name:        modalProduct.name,
           description: modalProduct.description,
           price:       modalProduct.price,
           url:         modalProduct.amazon_url,
+          quantity:    productQuantity,
+          priority:    productPriority,
         };
 
     try {
-      // Sequential POSTs — server auto-links same URL across lists via item_group_id
       for (const listId of selectedListIds) {
         await axios.post(`/api/wishlists/${listId}/items`, itemData);
       }
@@ -212,7 +268,7 @@ export default function Search() {
 
   return (
     <div>
-      <AdBanner format="horizontal" />
+      <AdBanner format="horizontal" slot={AD_SLOTS.horizontal} />
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div className="search-hero" style={{ position: 'relative' }}>
@@ -238,97 +294,121 @@ export default function Search() {
         </form>
       </div>
 
-      {/* ── Centred content ───────────────────────────────────────────────── */}
-      <div className="search-body">
+      {/* ── Three-column layout: sidebar | results | sidebar ──────────────── */}
+      <div className="search-layout">
 
-        {/* Category filter pills */}
-        <div className="search-category-pills">
-          {Object.entries(CATEGORY_META).map(([key, meta]) => (
-            <button
-              key={key}
-              className={`search-cat-pill ${activeCategory === key ? 'active' : ''}`}
-              onClick={() => activeCategory === key ? clearFilters() : handleCategory(key)}
-            >
-              {meta.icon} {meta.label}
-            </button>
-          ))}
-        </div>
+        <aside className="search-sidebar">
+          <AdBanner format="sidebar" slot={AD_SLOTS.vertical} />
+          <AdBanner format="sidebar" slot={AD_SLOTS.square} />
+        </aside>
 
-        {/* Active filter label */}
-        {(activeCategory || query.trim()) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-              Showing: <strong style={{ color: 'var(--color-text)' }}>{catLabel || `"${query}"`}</strong>
-              {' '}— {products.length} gift{products.length !== 1 ? 's' : ''}
-            </span>
-            <button
-              onClick={clearFilters}
-              style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-            >
-              ✕ Clear
-            </button>
+        {/* ── Results ─────────────────────────────────────────────────────── */}
+        <div className="search-body">
+
+          {/* Category filter pills */}
+          <div className="search-category-pills">
+            {Object.entries(CATEGORY_META).map(([key, meta]) => (
+              <button
+                key={key}
+                className={`search-cat-pill ${activeCategory === key ? 'active' : ''}`}
+                onClick={() => activeCategory === key ? clearFilters() : handleCategory(key)}
+              >
+                {meta.icon} {meta.label}
+              </button>
+            ))}
           </div>
-        )}
 
-        {/* ── Product grid ──────────────────────────────────────────────── */}
-        {products.length === 0 ? (
-          <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '3rem 0' }}>
-            No gifts found — try a different search.
-          </p>
-        ) : (
-          <div className="product-grid">
-            {products.map((p) => {
-              const meta = CATEGORY_META[p.category] || {};
-              return (
-                <div key={p.id} className="product-card">
-                  <div className="product-card-image" style={{ backgroundColor: meta.color || '#F3F4F6' }}>
-                    <span className="product-card-icon">{p.icon}</span>
+          {/* Active filter label */}
+          {(activeCategory || query.trim()) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                Showing: <strong style={{ color: 'var(--color-text)' }}>{catLabel || `"${query}"`}</strong>
+                {' '}— {products.length} gift{products.length !== 1 ? 's' : ''}
+              </span>
+              <button
+                onClick={clearFilters}
+                style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+              >
+                ✕ Clear
+              </button>
+            </div>
+          )}
+
+          {/* Product grid */}
+          {products.length === 0 ? (
+            <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '3rem 0' }}>
+              No gifts found — try a different search.
+            </p>
+          ) : (
+            <div className="product-grid">
+              {products.map((p) => {
+                const meta = CATEGORY_META[p.category] || {};
+                return (
+                  <div key={p.id} className="product-card">
+                    <div className="product-card-image" style={{ backgroundColor: meta.color || '#F3F4F6' }}>
+                      <span className="product-card-icon">{p.icon}</span>
+                    </div>
+                    <div className="product-card-body">
+                      <p className="product-card-name">{p.name}</p>
+                      <p className="product-card-desc">{p.description}</p>
+                      <p className="product-card-price">${p.price.toLocaleString()}</p>
+                    </div>
+                    <div className="product-card-actions">
+                      <a
+                        href={regionalizeAmazonUrl(p.amazon_url, user?.country || 'US')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="product-card-amazon"
+                      >
+                        🛒 View on Amazon
+                      </a>
+                      <button className="product-card-add" onClick={() => openProductModal(p)}>
+                        + Add to list
+                      </button>
+                    </div>
                   </div>
-                  <div className="product-card-body">
-                    <p className="product-card-name">{p.name}</p>
-                    <p className="product-card-desc">{p.description}</p>
-                    <p className="product-card-price">${p.price.toLocaleString()}</p>
-                  </div>
-                  <div className="product-card-actions">
-                    <a
-                      href={regionalizeAmazonUrl(p.amazon_url, user?.country || 'US')}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="product-card-amazon"
-                    >
-                      🛒 View on Amazon
-                    </a>
-                    <button className="product-card-add" onClick={() => openProductModal(p)}>
-                      + Add to list
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          )}
+
+          {/* Bottom Amazon CTA */}
+          <div className="search-amazon-fallback">
+            <p className="search-amazon-fallback-text">Didn't find what you were looking for?</p>
+            <div className="search-amazon-fallback-links">
+              <a
+                href={(() => {
+                  const country = user?.country || 'US';
+                  const domain  = AMAZON_DOMAINS[country] || 'amazon.com';
+                  const tag     = country === 'US' ? '&tag=alliwant0a-20' : '';
+                  return `https://www.${domain}/s?k=${encodeURIComponent(query || 'birthday gifts')}${tag}`;
+                })()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="search-amazon-fallback-btn"
+              >
+                🛒 Search all of Amazon
+              </a>
+            </div>
           </div>
-        )}
 
-        {/* ── Bottom Amazon CTA ─────────────────────────────────────────── */}
-        <div className="search-amazon-fallback">
-          <p className="search-amazon-fallback-text">Didn't find what you were looking for?</p>
-          <div className="search-amazon-fallback-links">
-            <a
-              href={(() => {
-                const country = user?.country || 'US';
-                const domain  = AMAZON_DOMAINS[country] || 'amazon.com';
-                const tag     = country === 'US' ? '&tag=alliwant0a-20' : '';
-                return `https://www.${domain}/s?k=${encodeURIComponent(query || 'birthday gifts')}${tag}`;
-              })()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="search-amazon-fallback-btn"
-            >
-              🛒 Search all of Amazon
-            </a>
-          </div>
-        </div>
+        </div>{/* end search-body */}
 
-      </div>
+        <aside className="search-sidebar">
+          <AdBanner format="sidebar" slot={AD_SLOTS.vertical} />
+          <AdBanner format="sidebar" slot={AD_SLOTS.square} />
+        </aside>
+
+      </div>{/* end search-layout */}
+
+      {/* Hidden file input for image upload */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleImageUpload}
+      />
 
       {/* ── Auth prompt modal ─────────────────────────────────────────────── */}
       {modalMode === 'auth-prompt' && (
@@ -362,7 +442,7 @@ export default function Search() {
               <button className="modal-close" onClick={closeModal}>✕</button>
             </div>
 
-            {/* Product preview */}
+            {/* Product preview (product mode only) */}
             {modalMode === 'product' && modalProduct && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--color-border)' }}>
                 <div style={{
@@ -382,6 +462,7 @@ export default function Search() {
             {/* Write-in form */}
             {modalMode === 'write-in' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--color-border)' }}>
+
                 <div>
                   <label className="write-in-label">Gift name *</label>
                   <input
@@ -394,6 +475,7 @@ export default function Search() {
                     autoFocus
                   />
                 </div>
+
                 <div>
                   <label className="write-in-label">
                     Link <span style={{ fontWeight: 400 }}>(optional — paste to auto-fill)</span>
@@ -416,7 +498,50 @@ export default function Search() {
                       {scraping ? '…' : 'Auto-fill ↓'}
                     </button>
                   </div>
+                  {scrapeError && <p style={{ fontSize: '0.72rem', color: '#D97706', marginTop: '0.2rem' }}>{scrapeError}</p>}
                 </div>
+
+                {/* Image — URL or upload */}
+                <div>
+                  <label className="write-in-label">
+                    Photo <span style={{ fontWeight: 400 }}>(optional)</span>
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="url"
+                      className="form-input"
+                      placeholder="Image URL or upload →"
+                      value={writeInForm.image_url.startsWith('data:') ? '' : writeInForm.image_url}
+                      onChange={(e) => setWriteInForm((f) => ({ ...f, image_url: e.target.value }))}
+                      style={{ fontSize: '0.875rem', flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      className="autofill-btn"
+                    >
+                      Upload
+                    </button>
+                  </div>
+                  {writeInForm.image_url && (
+                    <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <img
+                        src={writeInForm.image_url}
+                        alt="preview"
+                        style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)' }}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setWriteInForm((f) => ({ ...f, image_url: '' }))}
+                        style={{ fontSize: '0.72rem', color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   <div>
                     <label className="write-in-label">Price <span style={{ fontWeight: 400 }}>(optional)</span></label>
@@ -443,8 +568,61 @@ export default function Search() {
                     />
                   </div>
                 </div>
+
               </div>
             )}
+
+            {/* Quantity + Priority — shown in both modes */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div>
+                <label className="write-in-label">Quantity wanted</label>
+                {modalMode === 'write-in' ? (
+                  <input
+                    type="number"
+                    className="form-input"
+                    min="1"
+                    value={writeInForm.quantity}
+                    onChange={(e) => setWriteInForm((f) => ({ ...f, quantity: e.target.value }))}
+                    style={{ fontSize: '0.875rem' }}
+                  />
+                ) : (
+                  <input
+                    type="number"
+                    className="form-input"
+                    min="1"
+                    value={productQuantity}
+                    onChange={(e) => setProductQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    style={{ fontSize: '0.875rem' }}
+                  />
+                )}
+              </div>
+              <div>
+                <label className="write-in-label">Priority</label>
+                {modalMode === 'write-in' ? (
+                  <select
+                    className="form-input"
+                    value={writeInForm.priority}
+                    onChange={(e) => setWriteInForm((f) => ({ ...f, priority: e.target.value }))}
+                    style={{ fontSize: '0.875rem' }}
+                  >
+                    <option value={1}>⬆ High</option>
+                    <option value={2}>➡ Medium</option>
+                    <option value={3}>⬇ Low</option>
+                  </select>
+                ) : (
+                  <select
+                    className="form-input"
+                    value={productPriority}
+                    onChange={(e) => setProductPriority(parseInt(e.target.value))}
+                    style={{ fontSize: '0.875rem' }}
+                  >
+                    <option value={1}>⬆ High</option>
+                    <option value={2}>➡ Medium</option>
+                    <option value={3}>⬇ Low</option>
+                  </select>
+                )}
+              </div>
+            </div>
 
             {/* Status */}
             {addSuccess && <p style={{ color: '#059669', fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.875rem' }}>✅ {addSuccess}</p>}
