@@ -54,6 +54,7 @@ export default function Wishlist() {
   const [permittedIds, setPermittedIds] = useState(new Set());
   const [themeUrl,    setThemeUrl]    = useState('');
   const [savingTheme, setSavingTheme] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -400,15 +401,15 @@ export default function Wishlist() {
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             {[
-              { value: 'public',   label: '🌎 Public',          tip: 'Anyone with the link can view this wishlist.', disabled: !user?.creator_mode, disabledTip: 'Enable creator mode in your profile to make wishlists public.' },
-              { value: 'friends',  label: '👥 Friends',         tip: 'Only your accepted friends can view this wishlist.' },
-              { value: 'specific', label: '🔒 Specific people', tip: 'Only friends you hand-pick can view this wishlist.', disabled: friends.length === 0, disabledTip: 'Add friends first to use this feature.' },
-            ].map(({ value, label, tip, disabled, disabledTip }) => (
+              { value: 'public',   label: '🌎 Public',          disabled: !user?.creator_mode, disabledTip: 'Enable creator mode in your profile to make wishlists public.' },
+              { value: 'friends',  label: '👥 Friends' },
+              { value: 'specific', label: '🔒 Specific people', disabled: friends.length === 0, disabledTip: 'Add friends first to use this feature.' },
+            ].map(({ value, label, disabled, disabledTip }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => !disabled && handleVisibilityChange(value)}
-                title={disabled ? disabledTip : tip}
+                title={disabled ? disabledTip : undefined}
                 style={{
                   padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)',
                   fontSize: '0.8rem', fontWeight: 600,
@@ -426,10 +427,10 @@ export default function Wishlist() {
           </div>
           <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
             {currentVisibility === 'public'
-              ? 'Anyone with the link can view this wishlist.'
+              ? 'Anyone with the link can view · your creator handle (@alias) is shown'
               : currentVisibility === 'friends'
-              ? 'Only your accepted friends can view this wishlist.'
-              : 'Only specific friends you choose can view this wishlist.'}
+              ? 'Only accepted friends can view · your real name is shown'
+              : 'Only hand-picked friends can view · your real name is shown'}
           </p>
 
           {/* Friend picker — only shown when visibility is 'specific' */}
@@ -478,43 +479,6 @@ export default function Wishlist() {
             </button>
           </div>
         )}
-
-        {/* ── Name display toggle ──────────────────────────────────────────── */}
-        <div style={{
-          display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-          padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)',
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          marginBottom: '0.75rem',
-        }}>
-          <input
-            id="use_real_name"
-            type="checkbox"
-            style={{ marginTop: '0.2rem', accentColor: 'var(--color-primary)', width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }}
-            checked={Boolean(wishlist?.use_real_name)}
-            onChange={async (e) => {
-              const newVal = e.target.checked;
-              try {
-                const res = await axios.patch(`/api/wishlists/${wishlist.id}`, {
-                  ...wishlist, use_real_name: newVal,
-                });
-                setWishlist(res.data.wishlist);
-              } catch {
-                setError('Could not update name setting.');
-              }
-            }}
-          />
-          <label htmlFor="use_real_name" style={{ cursor: 'pointer', flex: 1 }}>
-            <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text)' }}>
-              👤 Show my real name on this list
-            </p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-              {Boolean(wishlist?.use_real_name)
-                ? 'Your full name is shown — great for sharing with family and close friends.'
-                : 'Your display name / alias is shown instead — better for public sharing or social media.'}
-            </p>
-          </label>
-        </div>
 
         {/* ── Address sharing toggle ───────────────────────────────────────── */}
         <div style={{
@@ -636,105 +600,13 @@ export default function Wishlist() {
 
         {error && <p className="auth-error" style={{ marginBottom: '1rem' }}>{error}</p>}
 
-        {/* ── Add item form ─────────────────────────────────────────────────── */}
-        <form className="add-item-form" onSubmit={handleAddItem}>
-          <p className="add-item-form-title">+ Add a gift idea</p>
-
-          <div className="add-item-grid">
-            <div className="full-width">
-              <label className="form-label">Item name *</label>
-              <input
-                name="name"
-                className="form-input"
-                placeholder='e.g. "Apple AirPods Pro" or "Spa gift card"'
-                value={form.name}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Price (optional)</label>
-              <input
-                name="price"
-                type="number"
-                min="0"
-                step="0.01"
-                className="form-input"
-                placeholder="49.99"
-                value={form.price}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Priority</label>
-              <select name="priority" className="form-input" value={form.priority} onChange={handleChange}>
-                <option value="1">🔴 High — really want this</option>
-                <option value="2">🟡 Medium — would love it</option>
-                <option value="3">🟢 Low — nice to have</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="form-label">Quantity wanted</label>
-              <input
-                name="quantity"
-                type="number"
-                min="1"
-                max="99"
-                className="form-input"
-                placeholder="1"
-                value={form.quantity}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="full-width">
-              <label className="form-label">
-                Product link — paste any URL and we'll auto-fill the details
-                {enriching && <span style={{ color: 'var(--color-primary)', marginLeft: '0.5rem', fontSize: '0.75rem' }}>Looking up…</span>}
-              </label>
-              <input
-                name="url"
-                type="url"
-                className="form-input"
-                placeholder="https://www.target.com/p/... or any product page"
-                value={form.url}
-                onChange={handleChange}
-                onBlur={handleUrlBlur}
-              />
-              {enrichHint && (
-                <p style={{ fontSize: '0.75rem', marginTop: '0.35rem', color: enrichHint.startsWith('✅') ? '#059669' : 'var(--color-text-muted)' }}>
-                  {enrichHint}
-                </p>
-              )}
-            </div>
-
-            <div className="full-width">
-              <label className="form-label">Description (optional)</label>
-              <input
-                name="description"
-                className="form-input"
-                placeholder='e.g. "Size M, color blue" or "I love lavender scents"'
-                value={form.description}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <button type="submit" className="btn-primary" style={{ marginTop: '1rem' }} disabled={saving}>
-            {saving ? 'Adding…' : 'Add to wishlist'}
-          </button>
-        </form>
-
         {/* ── Items list ───────────────────────────────────────────────────── */}
         {items.length === 0 ? (
           <div className="wishlist-empty">
             <div className="wishlist-empty-icon">🎁</div>
             <p className="wishlist-empty-title">Your wishlist is empty</p>
             <p className="wishlist-empty-desc">
-              Add items above, or{' '}
+              Write in a gift below, or{' '}
               <Link to="/search" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
                 browse gift ideas
               </Link>
@@ -753,6 +625,175 @@ export default function Wishlist() {
               />
             ))}
           </div>
+        )}
+
+        {/* ── Write in a gift ──────────────────────────────────────────────── */}
+        {!showAddForm ? (
+          <button
+            className="btn-secondary"
+            style={{ marginTop: '1.25rem', width: '100%', padding: '0.6rem', fontSize: '0.875rem' }}
+            onClick={() => setShowAddForm(true)}
+          >
+            ✏️ Write in a gift
+          </button>
+        ) : (
+          <form className="add-item-form" style={{ marginTop: '1.25rem' }} onSubmit={async (e) => { await handleAddItem(e); setShowAddForm(false); }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <p className="add-item-form-title" style={{ margin: 0 }}>✏️ Write in a gift</p>
+              <button type="button" className="btn-ghost" style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem' }} onClick={() => { setShowAddForm(false); setForm(EMPTY_FORM); setEnrichHint(''); }}>✕ Cancel</button>
+            </div>
+
+            <div className="add-item-grid">
+              <div className="full-width">
+                <label className="form-label">Item name *</label>
+                <input
+                  name="name"
+                  className="form-input"
+                  placeholder='e.g. "Apple AirPods Pro" or "Spa gift card"'
+                  value={form.name}
+                  onChange={handleChange}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Price (optional)</label>
+                <input
+                  name="price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="form-input"
+                  placeholder="49.99"
+                  value={form.price}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Priority</label>
+                <select name="priority" className="form-input" value={form.priority} onChange={handleChange}>
+                  <option value="1">🔴 High — really want this</option>
+                  <option value="2">🟡 Medium — would love it</option>
+                  <option value="3">🟢 Low — nice to have</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label">Quantity wanted</label>
+                <input
+                  name="quantity"
+                  type="number"
+                  min="1"
+                  max="99"
+                  className="form-input"
+                  placeholder="1"
+                  value={form.quantity}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="full-width">
+                <label className="form-label">
+                  Product link — paste any URL and we'll auto-fill the details
+                  {enriching && <span style={{ color: 'var(--color-primary)', marginLeft: '0.5rem', fontSize: '0.75rem' }}>Looking up…</span>}
+                </label>
+                <input
+                  name="url"
+                  type="url"
+                  className="form-input"
+                  placeholder="https://www.target.com/p/... or any product page"
+                  value={form.url}
+                  onChange={handleChange}
+                  onBlur={handleUrlBlur}
+                />
+                {enrichHint && (
+                  <p style={{ fontSize: '0.75rem', marginTop: '0.35rem', color: enrichHint.startsWith('✅') ? '#059669' : 'var(--color-text-muted)' }}>
+                    {enrichHint}
+                  </p>
+                )}
+              </div>
+
+              <div className="full-width">
+                <label className="form-label">Description (optional)</label>
+                <input
+                  name="description"
+                  className="form-input"
+                  placeholder='e.g. "Size M, color blue" or "I love lavender scents"'
+                  value={form.description}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {/* Item image — auto-filled from URL scrape, or upload manually */}
+              <div className="full-width">
+                <label className="form-label">Item photo (optional)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {form.image_url && (
+                    <img
+                      src={form.image_url}
+                      alt="Item preview"
+                      style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', flexShrink: 0 }}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
+                  <label style={{ cursor: 'pointer' }}>
+                    <span className="btn-ghost" style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem' }}>
+                      {form.image_url ? '📷 Replace photo' : '📷 Upload photo'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const canvas = document.createElement('canvas');
+                        const img = new Image();
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          img.onload = () => {
+                            const MAX = 600;
+                            let w = img.width, h = img.height;
+                            if (w > MAX || h > MAX) {
+                              if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                              else       { w = Math.round(w * MAX / h); h = MAX; }
+                            }
+                            canvas.width = w; canvas.height = h;
+                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                            setForm((prev) => ({ ...prev, image_url: canvas.toDataURL('image/jpeg', 0.8) }));
+                          };
+                          img.src = ev.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  {form.image_url && (
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      style={{ fontSize: '0.75rem', color: '#EF4444', padding: '0.3rem 0.5rem' }}
+                      onClick={() => setForm((prev) => ({ ...prev, image_url: '' }))}
+                    >
+                      Remove
+                    </button>
+                  )}
+                  {!form.image_url && (
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                      Auto-filled when you paste a link above, or upload one manually.
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" className="btn-primary" style={{ marginTop: '1rem' }} disabled={saving}>
+              {saving ? 'Adding…' : 'Add to wishlist'}
+            </button>
+          </form>
         )}
       </div>
 

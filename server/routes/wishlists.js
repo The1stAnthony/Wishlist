@@ -117,9 +117,11 @@ router.get('/share/:token', async (req, res) => {
 
     const owner = {
       id:         ownerRow.id,
-      shown_name: wishlist.use_real_name
-                    ? ownerRow.name
-                    : (ownerRow.display_name || ownerRow.name),
+      // Public wishlists show alias; friends/specific show real name
+      shown_name: wishlist.visibility === 'public'
+                    ? (ownerRow.display_name || ownerRow.name)
+                    : ownerRow.name,
+      avatar_url: ownerRow.avatar_url,
       country:    ownerRow.country || 'US',
       ...(wishlist.share_address && {
         street_address: ownerRow.street_address,
