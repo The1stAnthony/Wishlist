@@ -12,6 +12,7 @@ const scrapeRoutes      = require('./routes/scrape');
 const followsRoutes     = require('./routes/follows');
 const friendshipsRoutes = require('./routes/friendships');
 const usersRoutes       = require('./routes/users');
+const contactRoutes     = require('./routes/contact');
 
 const app    = express();
 const isProd = process.env.NODE_ENV === 'production';
@@ -36,6 +37,7 @@ app.use('/api/scrape',       scrapeRoutes);
 app.use('/api/follows',      followsRoutes);
 app.use('/api/friendships',  friendshipsRoutes);
 app.use('/api/users',        usersRoutes);
+app.use('/api/contact',      contactRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

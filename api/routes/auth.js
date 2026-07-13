@@ -1,8 +1,23 @@
 const express     = require('express');
 const bcrypt      = require('bcryptjs');
 const jwt         = require('jsonwebtoken');
+const crypto      = require('crypto');
 const { query, queryOne } = require('../../lib/db');
 const requireAuth = require('../middleware/auth');
+
+// Optional nodemailer transport — gracefully skips if MAIL_HOST is not configured
+let transporter = null;
+try {
+  const nodemailer = require('nodemailer');
+  if (process.env.MAIL_HOST) {
+    transporter = nodemailer.createTransport({
+      host:   process.env.MAIL_HOST,
+      port:   Number(process.env.MAIL_PORT)   || 587,
+      secure: process.env.MAIL_SECURE === 'true',
+      auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS },
+    });
+  }
+} catch { /* nodemailer not installed yet */ }
 
 const router = express.Router();
 
@@ -108,7 +123,17 @@ router.patch('/profile', requireAuth, async (req, res) => {
 
   if (!name?.trim()) return res.status(400).json({ error: 'Name is required' });
 
+  const cleanHandle = display_name?.trim() || null;
+
   try {
+    if (cleanHandle) {
+      const taken = await queryOne(
+        `SELECT id FROM users WHERE display_name = $1 AND id != $2`,
+        [cleanHandle, req.user.id]
+      );
+      if (taken) return res.status(409).json({ error: 'That handle is already taken. Please choose another.' });
+    }
+
     await query(
       `UPDATE users
        SET name = $1, display_name = $2, birthday = $3, avatar_url = $4,
@@ -116,7 +141,7 @@ router.patch('/profile', requireAuth, async (req, res) => {
        WHERE id = $10`,
       [
         name.trim(),
-        display_name?.trim() || null,
+        cleanHandle,
         birthday       || null,
         avatar_url     || null,
         street_address || null,
@@ -192,7 +217,78 @@ router.delete('/account', requireAuth, async (req, res) => {
   }
 });
 
-// ── PATCH /api/auth/creator-mode — kept here for auth namespace consistency ──
-// Actual logic lives in follows.js /toggle-creator — this is a convenience alias.
+// ── POST /api/auth/forgot-password ─────────────────────────────────────────
+
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+    const user = await queryOne('SELECT id, name FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+
+    // Always return 200 so we don't reveal whether the email exists
+    if (!user) return res.json({ ok: true });
+
+    const token   = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await query(
+      `UPDATE users SET reset_token = $1, reset_expires = $2 WHERE id = $3`,
+      [token, expires, user.id]
+    );
+
+    const resetUrl = `${process.env.APP_URL || 'https://alliwant.xyz'}/reset-password?token=${token}`;
+
+    if (transporter) {
+      await transporter.sendMail({
+        from:    `"All I Want" <${process.env.MAIL_USER}>`,
+        to:      email,
+        subject: 'Reset your All I Want password',
+        html: `
+          <p>Hi ${user.name},</p>
+          <p>Click the link below to reset your password. This link expires in 1 hour.</p>
+          <p><a href="${resetUrl}">${resetUrl}</a></p>
+          <p>If you didn't request this, you can safely ignore this email.</p>
+        `,
+      });
+    } else {
+      // Email not configured — log the link for local dev
+      console.log(`[PASSWORD RESET] Token for ${email}: ${resetUrl}`);
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ error: 'Could not process request' });
+  }
+});
+
+// ── POST /api/auth/reset-password ──────────────────────────────────────────
+
+router.post('/reset-password', async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) return res.status(400).json({ error: 'Token and password are required' });
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+
+  try {
+    const user = await queryOne(
+      `SELECT id FROM users WHERE reset_token = $1 AND reset_expires > NOW()`,
+      [token]
+    );
+    if (!user) return res.status(400).json({ error: 'This reset link is invalid or has expired.' });
+
+    const hashed = await bcrypt.hash(password, 12);
+    await query(
+      `UPDATE users SET password = $1, reset_token = NULL, reset_expires = NULL WHERE id = $2`,
+      [hashed, user.id]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Could not reset password' });
+  }
+});
 
 module.exports = router;

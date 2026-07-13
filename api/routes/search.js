@@ -42,10 +42,27 @@ function injectAffiliateTag(url) {
   }
 }
 
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 // GET /api/search/products?q=...&category=...
 router.get('/products', (req, res) => {
   const { q, category } = req.query;
-  let results = q?.trim() ? searchProducts(q) : (category ? getByCategory(category) : ALL_PRODUCTS);
+  let results;
+  if (q?.trim()) {
+    results = searchProducts(q);
+  } else if (category) {
+    results = getByCategory(category);
+  } else {
+    // Shuffle on the unfiltered browse so every category appears evenly
+    results = shuffle(ALL_PRODUCTS);
+  }
   res.json({ products: results, total: results.length });
 });
 

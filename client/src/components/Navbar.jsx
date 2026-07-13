@@ -18,16 +18,15 @@ export default function Navbar() {
     setMenuOpen(false);
   }
 
-  const initials = user?.name?.charAt(0).toUpperCase() || '?';
+  const initials  = user?.name?.charAt(0).toUpperCase() || '?';
+  const avatarUrl = user?.avatar_url;
 
   // Shared nav links so desktop and mobile drawer stay in sync
   const navLinks = user
     ? [
-        { to: '/dashboard',  label: 'Dashboard' },
-        { to: '/birthdays',  label: '🎂 Birthdays' },
-        { to: '/friends',    label: 'Friends' },
-        { to: '/search',     label: 'Find Gifts' },
-        { to: '/profile',    label: 'Profile' },
+        { to: '/dashboard', label: 'Dashboard' },
+        { to: '/friends',   label: 'Friends' },
+        { to: '/search',    label: 'Find Gifts' },
       ]
     : [];
 
@@ -57,16 +56,25 @@ export default function Navbar() {
 
         {/* Desktop right side */}
         <div className="navbar-actions">
-          {user && (
-            <>
-              <Link to="/profile" className="navbar-user" onClick={closeMenu}>
-                <div className="navbar-avatar">{initials}</div>
-                <span className="navbar-user-name">{user.name.split(' ')[0]}</span>
-              </Link>
-              <button className="btn-ghost" onClick={handleLogout}>
-                Sign out
-              </button>
-            </>
+          {user ? (
+            <Link to="/profile" className="navbar-user" onClick={closeMenu}>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={user.name}
+                  className="navbar-avatar"
+                  style={{ objectFit: 'cover' }}
+                  onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                />
+              ) : null}
+              <div className="navbar-avatar" style={avatarUrl ? { display: 'none' } : {}}>{initials}</div>
+              <span className="navbar-user-name">{user.name.split(' ')[0]}</span>
+            </Link>
+          ) : (
+            <div className="navbar-nav" style={{ display: 'flex' }}>
+              <Link to="/login"    className="navbar-link">Sign in</Link>
+              <Link to="/register" className="btn-primary" style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}>Sign up free</Link>
+            </div>
           )}
 
           {/* Hamburger — mobile only, only needed when logged in */}
@@ -101,17 +109,25 @@ export default function Navbar() {
         </div>
 
         <div className="mobile-nav">
+          {!user && (
+            <>
+              <Link to="/login"    className="mobile-nav-link" onClick={closeMenu}>Sign in</Link>
+              <Link to="/register" className="btn-primary mobile-nav-cta" onClick={closeMenu}>🚀 Sign up free</Link>
+            </>
+          )}
           {user && (
             <>
-              <div className="mobile-user-info">
-                <div className="navbar-avatar" style={{ width: 40, height: 40, fontSize: '1rem' }}>
-                  {initials}
-                </div>
+              <Link to="/profile" className="mobile-user-info" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={user.name} className="navbar-avatar" style={{ width: 40, height: 40 }} />
+                ) : (
+                  <div className="navbar-avatar" style={{ width: 40, height: 40, fontSize: '1rem' }}>{initials}</div>
+                )}
                 <div>
-                  <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>{user.name}</p>
+                  <p style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text)' }}>{user.name}</p>
                   <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{user.email}</p>
                 </div>
-              </div>
+              </Link>
 
               {navLinks.map((link) => (
                 <NavLink
@@ -124,8 +140,17 @@ export default function Navbar() {
                 </NavLink>
               ))}
 
+              {/* Profile link in mobile drawer only — desktop uses avatar click */}
+              <NavLink
+                to="/profile"
+                className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
+                onClick={closeMenu}
+              >
+                👤 Profile &amp; Settings
+              </NavLink>
+
               <button className="mobile-nav-link mobile-signout" onClick={handleLogout}>
-                Sign out
+                🚪 Sign out
               </button>
             </>
           )}

@@ -1,12 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import '../styles/pages/profile.css';
 
+// Resize an image File to a max dimension, returns a base64 JPEG data URL
+function resizeImageFile(file, maxSize = 200) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale  = Math.min(maxSize / img.width, maxSize / img.height, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function Profile() {
   const { user, updateUser, logout } = useAuth();
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
+  const fileInputRef = useRef(null);
 
   const [form, setForm] = useState({
     name:           '',
@@ -67,7 +90,26 @@ export default function Profile() {
   }, [user]);
 
   function handleChange(e) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    let value = e.target.value;
+    if (e.target.name === 'display_name') {
+      // Strip @ and any special characters — handle is letters, numbers, underscores only
+      value = value.replace(/^@+/, '').replace(/[^a-zA-Z0-9_]/g, '');
+    }
+    setForm((prev) => ({ ...prev, [e.target.name]: value }));
+  }
+
+  async function handleAvatarFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError('');
+    try {
+      const dataUrl = await resizeImageFile(file, 200);
+      setForm((prev) => ({ ...prev, avatar_url: dataUrl }));
+    } catch {
+      setError('Could not process image. Please try a different file.');
+    }
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
   }
 
   async function handleSave(e) {
@@ -176,23 +218,45 @@ export default function Profile() {
         {/* ── Identity ──────────────────────────────────────────────────────── */}
         <div className="profile-card">
           <div className="profile-avatar-row">
-            {form.avatar_url ? (
-              <img
-                src={form.avatar_url}
-                alt="Profile"
-                className="profile-avatar-large"
-                style={{ objectFit: 'cover' }}
-                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              {form.avatar_url ? (
+                <img
+                  src={form.avatar_url}
+                  alt="Profile"
+                  className="profile-avatar-large"
+                  style={{ objectFit: 'cover' }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              ) : (
+                <div className="profile-avatar-large">{initials}</div>
+              )}
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleAvatarFileChange}
               />
-            ) : null}
-            <div
-              className="profile-avatar-large"
-              style={form.avatar_url ? { display: 'none' } : {}}
-            >
-              {initials}
+              {/* Upload overlay button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Upload a new photo"
+                style={{
+                  position: 'absolute', bottom: 0, right: 0,
+                  width: 26, height: 26, borderRadius: '50%',
+                  background: 'var(--color-primary)', color: '#fff',
+                  border: '2px solid var(--color-surface)',
+                  fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                ✏️
+              </button>
             </div>
             <div className="profile-name-block">
-              <span className="profile-display-name">{user?.display_name || user?.name}</span>
+              <span className="profile-display-name">{user?.display_name ? `@${user.display_name}` : user?.name}</span>
               <span className="profile-email">{user?.email}</span>
               {memberSince && <span className="profile-member-since">Member since {memberSince}</span>}
             </div>
@@ -209,18 +273,25 @@ export default function Profile() {
 
             <div>
               <label className="form-label">
-                Display name / alias{' '}
+                Handle / alias{' '}
                 <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>
-                  (shown on public wishlists)
+                  (letters, numbers, underscores only — shown as @handle)
                 </span>
               </label>
-              <input
-                name="display_name"
-                className="form-input"
-                placeholder="@YourHandle or nickname"
-                value={form.display_name}
-                onChange={handleChange}
-              />
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)',
+                  color: 'var(--color-text-muted)', fontWeight: 600, pointerEvents: 'none',
+                }}>@</span>
+                <input
+                  name="display_name"
+                  className="form-input"
+                  placeholder="YourHandle"
+                  value={form.display_name}
+                  onChange={handleChange}
+                  style={{ paddingLeft: '1.75rem' }}
+                />
+              </div>
             </div>
 
             <div>
@@ -241,9 +312,9 @@ export default function Profile() {
 
             <div style={{ gridColumn: '1 / -1' }}>
               <label className="form-label">
-                Profile photo URL{' '}
+                Profile photo{' '}
                 <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>
-                  (paste a direct image link)
+                  (click the ✏️ on your avatar to upload, or paste a URL below)
                 </span>
               </label>
               <input
@@ -251,9 +322,24 @@ export default function Profile() {
                 type="url"
                 className="form-input"
                 placeholder="https://example.com/your-photo.jpg"
-                value={form.avatar_url}
+                value={form.avatar_url.startsWith('data:') ? '' : form.avatar_url}
                 onChange={handleChange}
+                disabled={form.avatar_url.startsWith('data:')}
+                title={form.avatar_url.startsWith('data:') ? 'Photo uploaded — save to apply' : undefined}
+                style={form.avatar_url.startsWith('data:') ? { opacity: 0.5 } : {}}
               />
+              {form.avatar_url.startsWith('data:') && (
+                <p style={{ fontSize: '0.72rem', color: '#059669', marginTop: '0.3rem' }}>
+                  ✅ Photo ready — click "Save all changes" to apply.{' '}
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, avatar_url: user?.avatar_url || '' }))}
+                    style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', padding: 0, fontSize: '0.72rem', fontWeight: 600 }}
+                  >
+                    Remove
+                  </button>
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -433,15 +519,43 @@ export default function Profile() {
           </p>
         )}
 
-        {creatorMode && (
-          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.75rem' }}>
-            Your public profile: <strong>alliwant.xyz/u/{user?.display_name}</strong>
-          </p>
+        {creatorMode && user?.display_name && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+              Your public profile:{' '}
+              <a
+                href={`/u/${user.display_name}`}
+                style={{ color: 'var(--color-primary)', fontWeight: 600 }}
+              >
+                alliwant.xyz/u/{user.display_name}
+              </a>
+            </p>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard.writeText(`https://alliwant.xyz/u/${user.display_name}`)}
+              style={{
+                fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--color-border)', background: 'var(--color-background)',
+                cursor: 'pointer', color: 'var(--color-text-muted)', flexShrink: 0,
+              }}
+            >
+              Copy link
+            </button>
+          </div>
         )}
       </div>
 
       {/* ── Quick links ────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
+        <button
+          type="button"
+          onClick={() => { logout(); navigate('/'); }}
+          className="profile-card"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none', padding: '1rem 1.25rem', background: 'none', border: '1px solid var(--color-border)', width: '100%', cursor: 'pointer', borderRadius: 'var(--radius-xl)', backgroundColor: 'var(--color-surface)' }}
+        >
+          <span style={{ fontWeight: 600, color: '#DC2626' }}>🚪 Sign out</span>
+          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>→</span>
+        </button>
         <Link to="/dashboard" className="profile-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none', padding: '1rem 1.25rem' }}>
           <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>🎁 My wishlists</span>
           <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>→</span>

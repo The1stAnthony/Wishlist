@@ -88,6 +88,12 @@ export default function Login() {
           </button>
         </form>
 
+        <p className="auth-switch" style={{ marginTop: '0.5rem' }}>
+          <Link to="/forgot-password" style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+            Forgot your password?
+          </Link>
+        </p>
+
         <p className="auth-switch">
           Don't have an account? <Link to="/register">Create one free</Link>
         </p>

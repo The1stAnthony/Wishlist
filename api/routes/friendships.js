@@ -216,4 +216,71 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/friendships/feed ───────────────────────────────────────────────
+// Wishlists from accepted friends. Includes any visibility tier since the
+// viewer IS a friend. Excludes wishlists whose event date was more than 7 days ago.
+
+router.get('/feed', requireAuth, async (req, res) => {
+  try {
+    const wishlists = await query(
+      `SELECT w.id, w.title, w.event_date, w.share_token, w.visibility,
+              u.id AS owner_id, u.name AS owner_name, u.display_name, u.avatar_url AS owner_avatar,
+              (SELECT image_url FROM wishlist_items
+               WHERE wishlist_id = w.id AND image_url IS NOT NULL
+               ORDER BY priority ASC, created_at ASC LIMIT 1) AS cover_image,
+              (SELECT COUNT(*) FROM wishlist_items WHERE wishlist_id = w.id)::int AS item_count
+       FROM wishlists w
+       JOIN users u ON u.id = w.user_id
+       JOIN friendships f
+         ON (f.requester_id = $1 AND f.addressee_id = w.user_id)
+         OR (f.addressee_id = $1 AND f.requester_id = w.user_id)
+       WHERE f.status = 'accepted'
+         AND w.visibility IN ('public', 'friends', 'specific')
+         AND (w.event_date IS NULL OR w.event_date >= CURRENT_DATE - INTERVAL '7 days')
+       ORDER BY
+         CASE WHEN w.event_date IS NULL THEN 1 ELSE 0 END,
+         w.event_date ASC,
+         w.created_at DESC
+       LIMIT 30`,
+      [req.user.id]
+    );
+    res.json({ wishlists });
+  } catch (err) {
+    console.error('Friends feed error:', err);
+    res.status(500).json({ error: 'Could not fetch friends\' wishlists' });
+  }
+});
+
+// ── GET /api/friendships/upcoming ──────────────────────────────────────────
+// Friends' wishlists with upcoming event dates — for the Dashboard events row.
+// Shows real name (not alias) since these are personal friends.
+
+router.get('/upcoming', requireAuth, async (req, res) => {
+  try {
+    const wishlists = await query(
+      `SELECT w.id, w.title, w.event_date, w.share_token,
+              u.id AS owner_id, u.name AS owner_name, u.display_name, u.avatar_url AS owner_avatar,
+              (SELECT image_url FROM wishlist_items
+               WHERE wishlist_id = w.id AND image_url IS NOT NULL
+               ORDER BY priority ASC LIMIT 1) AS cover_image
+       FROM wishlists w
+       JOIN users u ON u.id = w.user_id
+       JOIN friendships f
+         ON (f.requester_id = $1 AND f.addressee_id = w.user_id)
+         OR (f.addressee_id = $1 AND f.requester_id = w.user_id)
+       WHERE f.status = 'accepted'
+         AND w.event_date IS NOT NULL
+         AND w.event_date >= CURRENT_DATE
+         AND w.visibility IN ('public', 'friends', 'specific')
+       ORDER BY w.event_date ASC
+       LIMIT 10`,
+      [req.user.id]
+    );
+    res.json({ wishlists });
+  } catch (err) {
+    console.error('Friends upcoming error:', err);
+    res.status(500).json({ error: 'Could not fetch upcoming events' });
+  }
+});
+
 module.exports = router;

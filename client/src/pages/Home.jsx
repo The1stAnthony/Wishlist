@@ -3,10 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import '../styles/pages/home.css';
 
 const FEATURES = [
-  { icon: '🎂', title: 'Birthday-first design', desc: 'Built specifically for birthdays — not generic occasions. Set your date, share your link, get exactly what you want.' },
+  { icon: '🎂', title: 'Tied to any event', desc: 'Wishlists connect directly to birthdays, anniversaries, or any occasion — so your upcoming events dashboard always shows the right lists at the right time.' },
   { icon: '🛍️', title: 'Shop any retailer', desc: 'Add gifts from Amazon, Target, Etsy, or anywhere online. Paste a link and it\'s on your list instantly.' },
-  { icon: '📅', title: 'Birthday tracker', desc: 'Never forget a friend\'s birthday again. Get reminded ahead of time so you can actually find a thoughtful gift.' },
-  { icon: '✅', title: 'No duplicate gifts', desc: 'Gifters mark items as purchased so two people never buy the same thing — without spoiling the surprise.' },
+  { icon: '👁️', title: 'Shopper mode (spoiler-free)', desc: 'Gifters can browse and claim items without the recipient ever seeing what\'s been purchased. No spoilers, no duplicates.' },
+  { icon: '🔒', title: 'Private wishlists', desc: 'Create friends-only lists for your significant other or a small group. Keep spicy or sentimental gifts exactly where they belong.' },
 ];
 
 const STEPS = [
@@ -22,10 +22,10 @@ const FAQS = [
   },
   {
     q: 'Do my friends need an account to buy gifts?',
-    a: 'No. Anyone with your share link can view your list and mark items as purchased — no sign-up required.',
+    a: 'Yes — gifters need a free account to mark items as purchased. Signing up takes under a minute and lets them coordinate with other shoppers so nobody buys duplicates.',
   },
   {
-    q: 'Can iadd items from any website?',
+    q: 'Can I add items from any website?',
     a: 'Yes. Paste any product URL and it gets added to your list. Amazon, Target, Etsy, ASOS — any store works.',
   },
   {
@@ -61,17 +61,27 @@ export default function Home() {
         </h1>
 
         <p className="hero-subtitle">
-          Build a wishlist from any store, share one link, and let the people
-          who love you shop with confidence — no more guessing, no more returns.
+          Build a wishlist from any store, tie it to any event, and share one link.
+          Track upcoming birthdays, shop for friends without spoilers, and get the gifts
+          you actually want — no more guessing, no more returns.
         </p>
 
-        {user && (
-          <div className="hero-actions">
+        <div className="hero-actions">
+          {user ? (
             <Link to="/dashboard" className="btn-primary" style={{ fontSize: '1rem', padding: '0.75rem 2rem' }}>
               Go to my dashboard →
             </Link>
-          </div>
-        )}
+          ) : (
+            <>
+              <Link to="/register" className="btn-primary" style={{ fontSize: '1rem', padding: '0.75rem 2rem' }}>
+                🚀 Sign Up for Early Access
+              </Link>
+              <Link to="/search" className="btn-ghost" style={{ fontSize: '1rem', padding: '0.75rem 2rem' }}>
+                🔍 Find a gift
+              </Link>
+            </>
+          )}
+        </div>
 
         {/* Trust bar */}
         <div className="hero-trust">
@@ -135,9 +145,13 @@ export default function Home() {
               <li>🔗 <strong>One link</strong> — share it in your bio, stream, or posts</li>
               <li>✅ <strong>No duplicates</strong> — viewers coordinate automatically</li>
             </ul>
-            {user && (
-              <Link to="/dashboard" className="btn-primary" style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
-                Set up creator wishlist →
+            {user ? (
+              <Link to="/profile" className="btn-primary" style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
+                Enable creator mode →
+              </Link>
+            ) : (
+              <Link to="/register" className="btn-primary" style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
+                Get started free →
               </Link>
             )}
           </div>
@@ -193,14 +207,12 @@ export default function Home() {
         <p className="cta-subtitle">
           {user
             ? 'Head to your dashboard to manage your wishlists and birthday tracker.'
-            : 'Free to use. Every store supported. Full privacy control. Launching soon.'}
+            : 'Free forever. Every store supported. Privacy built in. Currently in early access — join now!'}
         </p>
         {user ? (
           <Link to="/dashboard" className="cta-btn">🎂 Go to my dashboard</Link>
         ) : (
-          <span className="cta-btn" style={{ cursor: 'default', opacity: 0.9 }}>
-            🚀 Early access coming soon
-          </span>
+          <Link to="/register" className="cta-btn">🚀 Sign Up for Early Access</Link>
         )}
       </section>
     </>

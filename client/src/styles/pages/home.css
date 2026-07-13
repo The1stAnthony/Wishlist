@@ -28,7 +28,7 @@
 }
 
 .hero-actions {
-  @apply flex flex-wrap items-center justify-center gap-4;
+  @apply flex flex-wrap items-center justify-center gap-4 mb-6;
 }
 
 /* Decorative floating emoji elements */

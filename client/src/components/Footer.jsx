@@ -28,6 +28,7 @@ export default function Footer() {
             <Link to="/register"  className="footer-link">Create a Wishlist</Link>
             <Link to="/search"    className="footer-link">Find Gifts</Link>
             <Link to="/dashboard" className="footer-link">Dashboard</Link>
+            <Link to="/careers"   className="footer-link">Careers</Link>
           </div>
         </div>
 
@@ -35,15 +36,24 @@ export default function Footer() {
         <div>
           <p className="footer-heading">Legal</p>
           <div className="footer-links">
-            <a href="#" className="footer-link">Privacy Policy</a>
-            <a href="#" className="footer-link">Terms of Service</a>
-            <a href="#" className="footer-link">Contact Us</a>
+            <Link to="/privacy"  className="footer-link">Privacy Policy</Link>
+            <Link to="/terms"    className="footer-link">Terms of Service</Link>
+            <Link to="/contact"  className="footer-link">Contact Us</Link>
           </div>
         </div>
       </div>
 
-      {/* Buy Me a Coffee + credits */}
-      <div className="footer-support">
+      <div className="footer-bottom">
+        <span>© {year} All I Want — Built by{' '}
+          <a
+            href="https://github.com/The1stAnthony"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-credits-link"
+          >
+            @The1stAnthony
+          </a>
+        </span>
         <a
           href="https://www.buymeacoffee.com/seanaprothu"
           target="_blank"
@@ -52,23 +62,6 @@ export default function Footer() {
         >
           ☕ Buy me a coffee
         </a>
-        <p className="footer-credits">
-          Built &amp; maintained by{' '}
-          <a
-            href="https://github.com/The1stAnthony"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="footer-credits-link"
-          >
-            @The1stAnthony
-          </a>{' '}
-          on GitHub
-        </p>
-      </div>
-
-      <div className="footer-bottom">
-        <span>© {year} All I Want. All rights reserved.</span>
-        <span>Made with 🎂 for birthday lovers</span>
       </div>
     </footer>
   );

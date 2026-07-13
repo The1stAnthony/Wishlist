@@ -61,6 +61,7 @@ export default function Friends() {
   const [friendsError,   setFriendsError]   = useState('');
 
   // Invite link + email
+  const [showInvitePanel, setShowInvitePanel] = useState(false);
   const [inviteToken,  setInviteToken]  = useState('');
   const [inviteLoading, setInviteLoading] = useState(false);
   const [emailInput,   setEmailInput]   = useState('');
@@ -296,63 +297,76 @@ export default function Friends() {
       </div>
 
       {/* ── Friends & Family ─────────────────────────────────────────────────── */}
-      <h2 className="friends-section-title">Friends &amp; Family:</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showInvitePanel ? '0.5rem' : '0' }}>
+        <h2 className="friends-section-title">Friends &amp; Family</h2>
+        <button
+          className="friends-btn friends-btn-follow-back"
+          style={{ fontSize: '1.25rem', width: 34, height: 34, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+          onClick={() => setShowInvitePanel((p) => !p)}
+          aria-label="Add friend"
+          title="Add a friend"
+        >
+          {showInvitePanel ? '×' : '+'}
+        </button>
+      </div>
 
-      {/* Invite / email request tools */}
-      <div className="friends-invite-section">
-        {/* Generate invite link */}
-        <div>
-          <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
-            📨 Send an invite link
-          </p>
-          {inviteUrl ? (
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <input className="form-input" value={inviteUrl} readOnly style={{ fontSize: '0.75rem' }} />
+      {/* Invite / email request tools — hidden until + is clicked */}
+      {showInvitePanel && (
+        <div className="friends-invite-section">
+          {/* Generate invite link */}
+          <div>
+            <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
+              📨 Send an invite link
+            </p>
+            {inviteUrl ? (
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input className="form-input" value={inviteUrl} readOnly style={{ fontSize: '0.75rem' }} />
+                <button
+                  className="friends-btn friends-btn-follow-back"
+                  style={{ flexShrink: 0 }}
+                  onClick={() => { navigator.clipboard.writeText(inviteUrl); }}
+                >
+                  Copy
+                </button>
+              </div>
+            ) : (
               <button
                 className="friends-btn friends-btn-follow-back"
-                style={{ flexShrink: 0 }}
-                onClick={() => { navigator.clipboard.writeText(inviteUrl); }}
+                style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}
+                onClick={handleGenerateInvite}
+                disabled={inviteLoading}
               >
-                Copy
+                {inviteLoading ? 'Generating…' : 'Generate invite link'}
+              </button>
+            )}
+          </div>
+
+          {/* Email lookup */}
+          <form onSubmit={handleEmailRequest}>
+            <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
+              ✉️ Add by email
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                className="form-input"
+                type="email"
+                placeholder="their@email.com"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                required
+              />
+              <button type="submit" className="friends-btn friends-btn-follow-back" style={{ flexShrink: 0 }} disabled={emailSending}>
+                {emailSending ? '…' : 'Send'}
               </button>
             </div>
-          ) : (
-            <button
-              className="friends-btn friends-btn-follow-back"
-              style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}
-              onClick={handleGenerateInvite}
-              disabled={inviteLoading}
-            >
-              {inviteLoading ? 'Generating…' : 'Generate invite link'}
-            </button>
-          )}
+            {emailMsg && (
+              <p style={{ fontSize: '0.75rem', marginTop: '0.4rem', color: emailMsg.includes('sent') ? '#059669' : '#DC2626' }}>
+                {emailMsg}
+              </p>
+            )}
+          </form>
         </div>
-
-        {/* Email lookup */}
-        <form onSubmit={handleEmailRequest}>
-          <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: '0.5rem' }}>
-            ✉️ Add by email
-          </p>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <input
-              className="form-input"
-              type="email"
-              placeholder="their@email.com"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              required
-            />
-            <button type="submit" className="friends-btn friends-btn-follow-back" style={{ flexShrink: 0 }} disabled={emailSending}>
-              {emailSending ? '…' : 'Send'}
-            </button>
-          </div>
-          {emailMsg && (
-            <p style={{ fontSize: '0.75rem', marginTop: '0.4rem', color: emailMsg.includes('sent') ? '#059669' : '#DC2626' }}>
-              {emailMsg}
-            </p>
-          )}
-        </form>
-      </div>
+      )}
 
       {friendsError && <p className="friends-error">{friendsError}</p>}
 

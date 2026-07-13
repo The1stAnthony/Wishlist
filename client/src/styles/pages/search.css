@@ -252,6 +252,7 @@
   max-width: 380px;
   background-color: var(--color-surface);
   box-shadow: var(--shadow-modal);
+  position: relative;
 }
 
 .modal-header {

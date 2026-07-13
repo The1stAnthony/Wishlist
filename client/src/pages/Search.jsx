@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import AdBanner from '../components/AdBanner';
@@ -29,6 +30,9 @@ export default function Search() {
   const [adding,       setAdding]       = useState(false);
   const [addSuccess,   setAddSuccess]   = useState('');
   const [addError,     setAddError]     = useState('');
+
+  // Auth prompt for non-logged-in users who click "Add to list"
+  const [authPromptItem, setAuthPromptItem] = useState(null);
 
   // Load all products on mount
   useEffect(() => {
@@ -207,9 +211,12 @@ export default function Search() {
                         + Add to list
                       </button>
                     ) : (
-                      <a href="/login" className="product-card-add">
-                        Sign in to add
-                      </a>
+                      <button
+                        className="product-card-add"
+                        onClick={() => setAuthPromptItem(p)}
+                      >
+                        + Add to list
+                      </button>
                     )}
                   </div>
                 </div>
@@ -234,6 +241,30 @@ export default function Search() {
         </div>
 
       </div>
+
+      {/* ── Auth prompt modal (non-logged-in users) ───────────────────────── */}
+      {authPromptItem && (
+        <div className="modal-overlay" onClick={() => setAuthPromptItem(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ textAlign: 'center' }}>
+            <button className="modal-close" onClick={() => setAuthPromptItem(null)} style={{ position: 'absolute', top: 12, right: 12 }}>✕</button>
+            <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎁</p>
+            <p style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.4rem', color: 'var(--color-text)' }}>
+              Save <em>{authPromptItem.name}</em> to your wishlist
+            </p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem', lineHeight: 1.5 }}>
+              Create a free account to build wishlists from any store and share them with friends &amp; family.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to="/register" className="btn-primary" onClick={() => setAuthPromptItem(null)}>
+                Create free account
+              </Link>
+              <Link to="/login" className="btn-ghost" onClick={() => setAuthPromptItem(null)}>
+                Sign in
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Add-to-wishlist modal ──────────────────────────────────────────── */}
       {modalItem && (

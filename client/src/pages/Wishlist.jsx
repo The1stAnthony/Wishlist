@@ -24,6 +24,8 @@ export default function Wishlist() {
   const [copied,     setCopied]     = useState(false);
   const [enriching,  setEnriching]  = useState(false);
   const [enrichHint, setEnrichHint] = useState('');
+  const [editingDate, setEditingDate] = useState(false);
+  const [dateValue,   setDateValue]   = useState('');
 
   useEffect(() => {
     axios.get(`/api/wishlists/${id}`)
@@ -152,6 +154,18 @@ export default function Wishlist() {
     }
   }
 
+  async function handleDateSave() {
+    try {
+      const res = await axios.patch(`/api/wishlists/${wishlist.id}`, {
+        ...wishlist, event_date: dateValue || null,
+      });
+      setWishlist(res.data.wishlist);
+      setEditingDate(false);
+    } catch {
+      setError('Could not update event date.');
+    }
+  }
+
   const currentVisibility = wishlist?.visibility || (wishlist?.is_public ? 'public' : 'friends');
   const shareUrl = `${window.location.origin}/list/${wishlist?.share_token}`;
 
@@ -165,10 +179,34 @@ export default function Wishlist() {
               ← Back to dashboard
             </button>
             <h1 className="wishlist-page-title">{wishlist?.title}</h1>
-            {wishlist?.event_date && (
-              <p className="wishlist-page-date">
-                🎂 {new Date(wishlist.event_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </p>
+            {editingDate ? (
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={dateValue}
+                  onChange={(e) => setDateValue(e.target.value)}
+                  style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', width: 'auto' }}
+                  autoFocus
+                />
+                <button className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }} onClick={handleDateSave}>Save</button>
+                <button className="btn-ghost"   style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }} onClick={() => setEditingDate(false)}>Cancel</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setDateValue(wishlist?.event_date || ''); setEditingDate(true); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
+              >
+                {wishlist?.event_date ? (
+                  <p className="wishlist-page-date" style={{ textDecoration: 'underline dotted', textDecorationColor: 'var(--color-text-muted)' }}>
+                    🎂 {new Date(wishlist.event_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} ✏️
+                  </p>
+                ) : (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+                    + Set an event date
+                  </p>
+                )}
+              </button>
             )}
           </div>
 

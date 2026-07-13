@@ -114,15 +114,17 @@ export default function Dashboard() {
   const { user }   = useAuth();
   const navigate   = useNavigate();
 
-  const [wishlists,       setWishlists]       = useState([]);
-  const [upcomingBdays,   setUpcomingBdays]   = useState([]);
-  const [networkUpcoming, setNetworkUpcoming] = useState([]);
-  const [creatorFeed,     setCreatorFeed]     = useState([]);
-  const [showForm,        setShowForm]        = useState(false);
-  const [newList,         setNewList]         = useState({ title: '', event_date: '' });
-  const [creating,        setCreating]        = useState(false);
-  const [loading,         setLoading]         = useState(true);
-  const [error,           setError]           = useState('');
+  const [wishlists,         setWishlists]         = useState([]);
+  const [upcomingBdays,     setUpcomingBdays]     = useState([]);
+  const [networkUpcoming,   setNetworkUpcoming]   = useState([]);
+  const [friendsUpcoming,   setFriendsUpcoming]   = useState([]);
+  const [friendsFeed,       setFriendsFeed]       = useState([]);
+  const [creatorFeed,       setCreatorFeed]       = useState([]);
+  const [showForm,          setShowForm]          = useState(false);
+  const [newList,           setNewList]           = useState({ title: '', event_date: '' });
+  const [creating,          setCreating]          = useState(false);
+  const [loading,           setLoading]           = useState(true);
+  const [error,             setError]             = useState('');
 
   const scrollRef = useRef(null);
 
@@ -132,42 +134,65 @@ export default function Dashboard() {
       axios.get('/api/birthdays/upcoming'),
       axios.get('/api/follows/network-upcoming').catch(() => ({ data: { wishlists: [] } })),
       axios.get('/api/follows/feed').catch(() => ({ data: { wishlists: [] } })),
-    ]).then(([listRes, bdayRes, netRes, feedRes]) => {
+      axios.get('/api/friendships/feed').catch(() => ({ data: { wishlists: [] } })),
+      axios.get('/api/friendships/upcoming').catch(() => ({ data: { wishlists: [] } })),
+    ]).then(([listRes, bdayRes, netRes, feedRes, friendsFeedRes, friendsUpcomingRes]) => {
       setWishlists(listRes.data.wishlists);
       setUpcomingBdays(bdayRes.data.upcoming);
       setNetworkUpcoming(netRes.data.wishlists);
       setCreatorFeed(feedRes.data.wishlists);
+      setFriendsFeed(friendsFeedRes.data.wishlists);
+      setFriendsUpcoming(friendsUpcomingRes.data.wishlists);
     }).catch(() => setError('Failed to load your dashboard. Please refresh.'))
       .finally(() => setLoading(false));
   }, []);
 
-  // Combine birthday contacts + network wishlists into one sorted upcoming list
+  // Combine birthday contacts + creator network + friends' upcoming into one sorted list
   const allUpcoming = [
     ...upcomingBdays.map((c) => ({
-      id:         `b-${c.id}`,
-      type:       'birthday',
-      title:      c.contact_name,
-      days_until: c.days_until,
-      link:       c.wishlist_url || null,
-      isExternal: true,
+      id:           `b-${c.id}`,
+      type:         'birthday',
+      title:        c.contact_name,
+      days_until:   c.days_until,
+      link:         c.wishlist_url || null,
+      isExternal:   true,
       cover_image:  null,
       owner_name:   null,
       owner_avatar: null,
     })),
+    // Creator network: show alias (display_name)
     ...networkUpcoming
       .map((w) => ({
-        id:         `w-${w.id}`,
-        type:       'wishlist',
-        title:      w.title,
-        days_until: daysUntilDate(w.event_date),
-        link:       `/list/${w.share_token}`,
-        isExternal: false,
+        id:           `n-${w.id}`,
+        type:         'wishlist',
+        title:        w.title,
+        days_until:   daysUntilDate(w.event_date),
+        link:         `/list/${w.share_token}`,
+        isExternal:   false,
         cover_image:  w.cover_image,
         owner_name:   w.display_name || w.owner_name,
         owner_avatar: w.owner_avatar,
       }))
       .filter((w) => w.days_until >= 0 && w.days_until <= 90),
-  ].sort((a, b) => a.days_until - b.days_until).slice(0, 15);
+    // Friends: show real name (owner_name), not alias
+    ...friendsUpcoming
+      .map((w) => ({
+        id:           `f-${w.id}`,
+        type:         'wishlist',
+        title:        w.title,
+        days_until:   daysUntilDate(w.event_date),
+        link:         `/list/${w.share_token}`,
+        isExternal:   false,
+        cover_image:  w.cover_image,
+        owner_name:   w.owner_name,
+        owner_avatar: w.owner_avatar,
+      }))
+      .filter((w) => w.days_until >= 0 && w.days_until <= 90),
+  ]
+    // Deduplicate by wishlist id (a friend who is also a creator could appear twice)
+    .filter((item, idx, arr) => arr.findIndex((x) => x.id === item.id) === idx)
+    .sort((a, b) => a.days_until - b.days_until)
+    .slice(0, 20);
 
   async function createWishlist(e) {
     e.preventDefault();
@@ -202,10 +227,28 @@ export default function Dashboard() {
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
+  // Birthday reminder: show if user has a birthday within 90 days and <10 items total
+  const birthdayReminder = (() => {
+    if (!user?.birthday) return null;
+    const bd = new Date(user.birthday + 'T00:00:00');
+    const now = new Date();
+    const thisYear = new Date(now.getFullYear(), bd.getMonth(), bd.getDate());
+    const next = thisYear < now ? new Date(now.getFullYear() + 1, bd.getMonth(), bd.getDate()) : thisYear;
+    const daysAway = Math.ceil((next - now) / 86400000);
+    if (daysAway > 90) return null;
+    const totalItems = wishlists.reduce((s, w) => s + (w.item_count || 0), 0);
+    return { daysAway, totalItems };
+  })();
+
   if (loading) return <div className="page-loading">Loading your dashboard…</div>;
 
   return (
-    <div className="page-with-sidebar">
+    <div className="page-with-sidebar-3col">
+      {/* ── Left sidebar ads ────────────────────────────────────────────────── */}
+      <aside className="sidebar-ads-left ad-sidebar">
+        <AdBanner format="sidebar" />
+      </aside>
+
       <div>
         {/* ── Greeting ──────────────────────────────────────────────────────── */}
         <div className="dashboard-header">
@@ -216,6 +259,44 @@ export default function Dashboard() {
         </div>
 
         {error && <p className="auth-error" style={{ marginBottom: '1rem' }}>{error}</p>}
+
+        {/* ── Birthday reminder banner ──────────────────────────────────────── */}
+        {birthdayReminder && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap',
+            gap: '0.75rem', padding: '1rem 1.25rem', borderRadius: 'var(--radius-xl)',
+            background: 'linear-gradient(135deg, #EDE9FE, #FAF9FF)',
+            border: '1.5px solid var(--color-primary-light)', marginBottom: '1.5rem',
+          }}>
+            <div>
+              <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-primary-dark)' }}>
+                🎂 Your birthday is in {birthdayReminder.daysAway} days!
+              </p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+                {birthdayReminder.totalItems < 10
+                  ? `You only have ${birthdayReminder.totalItems} gift idea${birthdayReminder.totalItems !== 1 ? 's' : ''} — we suggest at least 10 so friends have great options.`
+                  : 'Make sure your wishlist is up to date and shared!'}
+              </p>
+            </div>
+            {wishlists.length === 0 ? (
+              <button
+                className="btn-primary"
+                style={{ fontSize: '0.8rem', padding: '0.4rem 1rem', flexShrink: 0 }}
+                onClick={() => setShowForm(true)}
+              >
+                + Create wishlist
+              </button>
+            ) : (
+              <button
+                className="btn-primary"
+                style={{ fontSize: '0.8rem', padding: '0.4rem 1rem', flexShrink: 0 }}
+                onClick={() => navigate(`/wishlist/${wishlists[0].id}`)}
+              >
+                + Add gifts
+              </button>
+            )}
+          </div>
+        )}
 
         {/* ── Upcoming Birthdays / Events ───────────────────────────────────── */}
         {allUpcoming.length > 0 && (
@@ -304,16 +385,46 @@ export default function Dashboard() {
           <div className="dashboard-section-header">
             <h2 className="section-title" style={{ marginBottom: 0 }}>Friends' Wishlists</h2>
             <Link to="/friends" className="btn-ghost" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
-              View all →
+              {friendsFeed.length > 0 ? 'Manage friends →' : 'Add friends →'}
             </Link>
           </div>
-          <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}>
-            <p style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>🤝</p>
-            <p style={{ fontSize: '0.875rem' }}>
-              Wishlists shared with you by friends will appear here.{' '}
-              <Link to="/friends" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Add friends →</Link>
-            </p>
-          </div>
+
+          {friendsFeed.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}>
+              <p style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>🤝</p>
+              <p style={{ fontSize: '0.875rem' }}>
+                Add friends to see their wishlists here.{' '}
+                <Link to="/friends" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Find friends →</Link>
+              </p>
+            </div>
+          ) : (
+            <div className="wishlists-grid" style={{ marginTop: '1rem' }}>
+              {friendsFeed.map((w) => (
+                <Link key={w.id} to={`/list/${w.share_token}`} style={{ textDecoration: 'none' }}>
+                  <div className="wishlist-card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                      <MiniAvatar name={w.owner_name} url={w.owner_avatar} />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                        {w.owner_name}
+                      </span>
+                    </div>
+                    <p className="wishlist-card-title">{w.title}</p>
+                    {w.event_date && (
+                      <p className="wishlist-card-date">
+                        🎂 {new Date(w.event_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                      </p>
+                    )}
+                    <div className="wishlist-card-meta">
+                      <span className="badge badge-purple">{w.item_count} item{w.item_count !== 1 ? 's' : ''}</span>
+                      {w.visibility === 'friends'  && <span className="badge badge-amber">Friends</span>}
+                      {w.visibility === 'specific' && <span className="badge">Specific</span>}
+                      {w.visibility === 'public'   && <span className="badge badge-green">Public</span>}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ── Creators' Wishlists ───────────────────────────────────────────── */}
@@ -357,7 +468,7 @@ export default function Dashboard() {
         </section>
       </div>
 
-      {/* ── Sidebar ads ───────────────────────────────────────────────────── */}
+      {/* ── Right sidebar ads ───────────────────────────────────────────────── */}
       <aside className="sidebar-ads ad-sidebar">
         <AdBanner format="sidebar" />
         <AdBanner format="sidebar" />

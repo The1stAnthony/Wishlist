@@ -57,8 +57,56 @@ router.get('/following', requireAuth, async (req, res) => {
   }
 });
 
+// ── POST /api/follows/toggle-creator ───────────────────────────────────────
+// Enable or disable creator mode for the logged-in user.
+// Enabling requires a display_name and triggers mutual auto-follow with the platform account.
+
+router.post('/toggle-creator', requireAuth, async (req, res) => {
+  const enabling = Boolean(req.body.creator_mode);
+
+  try {
+    const me = await queryOne(
+      `SELECT display_name, creator_mode FROM users WHERE id = $1`,
+      [req.user.id]
+    );
+
+    if (enabling && !me.display_name?.trim()) {
+      return res.status(400).json({
+        error: 'Set a display name / handle in your profile before enabling creator mode.',
+      });
+    }
+
+    await query('UPDATE users SET creator_mode = $1 WHERE id = $2', [enabling, req.user.id]);
+
+    // First-time enable → mutual follow with platform account (skip if user IS the platform)
+    if (enabling && !me.creator_mode) {
+      const platform = await queryOne(
+        `SELECT id FROM users WHERE display_name = $1`,
+        [PLATFORM_HANDLE]
+      );
+      if (platform && platform.id !== req.user.id) {
+        await query(
+          `INSERT INTO follows (follower_id, followed_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [req.user.id, platform.id]
+        );
+        await query(
+          `INSERT INTO follows (follower_id, followed_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [platform.id, req.user.id]
+        );
+      }
+    }
+
+    res.json({ ok: true, creator_mode: enabling });
+  } catch (err) {
+    console.error('Toggle creator mode error:', err);
+    res.status(500).json({ error: 'Could not update creator mode' });
+  }
+});
+
 // ── POST /api/follows/:handle ───────────────────────────────────────────────
 // Follow a creator by their display_name handle. Only creators are followable.
+// NOTE: must be declared AFTER all static POST routes (toggle-creator) to avoid
+// the dynamic segment swallowing them.
 
 router.post('/:handle', requireAuth, async (req, res) => {
   try {
@@ -98,52 +146,6 @@ router.delete('/:handle', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Unfollow error:', err);
     res.status(500).json({ error: 'Could not unfollow' });
-  }
-});
-
-// ── POST /api/follows/toggle-creator ───────────────────────────────────────
-// Enable or disable creator mode for the logged-in user.
-// Enabling requires a display_name and triggers mutual auto-follow with the platform account.
-
-router.post('/toggle-creator', requireAuth, async (req, res) => {
-  const enabling = Boolean(req.body.creator_mode);
-
-  try {
-    const me = await queryOne(
-      `SELECT display_name, creator_mode FROM users WHERE id = $1`,
-      [req.user.id]
-    );
-
-    if (enabling && !me.display_name?.trim()) {
-      return res.status(400).json({
-        error: 'Set a display name / handle in your profile before enabling creator mode.',
-      });
-    }
-
-    await query('UPDATE users SET creator_mode = $1 WHERE id = $2', [enabling, req.user.id]);
-
-    // First-time enable → mutual follow with platform account
-    if (enabling && !me.creator_mode) {
-      const platform = await queryOne(
-        `SELECT id FROM users WHERE display_name = $1`,
-        [PLATFORM_HANDLE]
-      );
-      if (platform) {
-        await query(
-          `INSERT INTO follows (follower_id, followed_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-          [req.user.id, platform.id]
-        );
-        await query(
-          `INSERT INTO follows (follower_id, followed_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-          [platform.id, req.user.id]
-        );
-      }
-    }
-
-    res.json({ ok: true, creator_mode: enabling });
-  } catch (err) {
-    console.error('Toggle creator mode error:', err);
-    res.status(500).json({ error: 'Could not update creator mode' });
   }
 });
 

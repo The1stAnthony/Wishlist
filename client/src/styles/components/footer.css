@@ -48,14 +48,8 @@
   color: var(--color-primary);
 }
 
-/* ── Buy Me a Coffee + credits ────────────────────────────────────────────── */
-.footer-support {
-  @apply max-w-5xl mx-auto flex flex-col items-center gap-3 py-8 mt-8;
-  border-top: 1px solid var(--color-border);
-}
-
 .bmc-btn {
-  @apply inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all;
+  @apply inline-flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-sm transition-all flex-shrink-0;
   background-color: #FFDD00;
   color: #000000;
   border: 2px solid #000000;
@@ -66,11 +60,6 @@
   color: #FFDD00;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-.footer-credits {
-  @apply text-xs;
-  color: var(--color-text-muted);
 }
 
 .footer-credits-link {
@@ -85,7 +74,7 @@
 
 /* ── Bottom bar ───────────────────────────────────────────────────────────── */
 .footer-bottom {
-  @apply max-w-5xl mx-auto flex items-center justify-between pt-6 text-xs;
+  @apply max-w-5xl mx-auto flex items-center justify-between gap-4 pt-6 mt-8 text-xs flex-wrap;
   color: var(--color-text-muted);
   border-top: 1px solid var(--color-border);
 }
