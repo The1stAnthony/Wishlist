@@ -70,12 +70,31 @@ function EventCard({ item }) {
   return <Link to={item.link} style={{ textDecoration: 'none' }}>{inner}</Link>;
 }
 
-function WishlistCard({ list, onDelete }) {
+function WishlistCard({ list, onDelete, userAvatarUrl }) {
   const navigate = useNavigate();
   const vis = list.visibility || (list.is_public ? 'public' : 'friends');
+  const coverSrc = list.theme_image_url || userAvatarUrl || null;
 
   return (
     <div className="wishlist-card" onClick={() => navigate(`/wishlist/${list.id}`)}>
+      {coverSrc && (
+        <img
+          src={coverSrc}
+          alt={list.title}
+          style={{
+            width: '100%',
+            height: list.theme_image_url ? 100 : 40,
+            objectFit: 'cover',
+            borderRadius: list.theme_image_url ? 'var(--radius-md) var(--radius-md) 0 0' : '50%',
+            display: 'block',
+            marginBottom: '0.5rem',
+            ...(list.theme_image_url
+              ? { margin: '-1rem -1rem 0.75rem', width: 'calc(100% + 2rem)', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0' }
+              : { width: 40, height: 40, borderRadius: '50%', margin: '0 0 0.5rem' }),
+          }}
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
+      )}
       <div>
         <p className="wishlist-card-title">{list.title}</p>
         {list.event_date && (
@@ -385,7 +404,7 @@ export default function Dashboard() {
 
           <div className="wishlists-grid" style={{ marginTop: '1rem' }}>
             {wishlists.map((list) => (
-              <WishlistCard key={list.id} list={list} onDelete={handleDeleteList} />
+              <WishlistCard key={list.id} list={list} onDelete={handleDeleteList} userAvatarUrl={user?.avatar_url} />
             ))}
             {!showForm && (
               <div className="wishlist-card-new" onClick={() => setShowForm(true)}>

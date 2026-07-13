@@ -302,20 +302,52 @@ export default function Wishlist() {
           <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text)', marginBottom: '0.5rem' }}>
             🖼 Wishlist theme image
           </p>
-          {wishlist?.theme_image_url && (
+          {(themeUrl || wishlist?.theme_image_url) && (
             <img
-              src={wishlist.theme_image_url}
-              alt="Theme"
+              src={themeUrl || wishlist.theme_image_url}
+              alt="Theme preview"
               style={{ width: '100%', maxHeight: 140, objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: '0.5rem' }}
               onError={(e) => { e.target.style.display = 'none'; }}
             />
           )}
+          {/* File upload */}
+          <label style={{ display: 'inline-block', marginBottom: '0.5rem', cursor: 'pointer' }}>
+            <span className="btn-ghost" style={{ fontSize: '0.78rem', padding: '0.35rem 0.875rem' }}>
+              📁 Upload photo
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const canvas = document.createElement('canvas');
+                const img = new Image();
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  img.onload = () => {
+                    const MAX_W = 1200, MAX_H = 600;
+                    let w = img.width, h = img.height;
+                    if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+                    if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    setThemeUrl(canvas.toDataURL('image/jpeg', 0.75));
+                  };
+                  img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input
               type="url"
               className="form-input"
-              placeholder="Paste an image URL…"
-              value={themeUrl}
+              placeholder="…or paste an image URL"
+              value={themeUrl.startsWith('data:') ? '' : themeUrl}
               onChange={(e) => setThemeUrl(e.target.value)}
               style={{ flex: 1, fontSize: '0.8rem' }}
             />

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-const LAST_UPDATED = 'July 12, 2026';
+const LAST_UPDATED = 'July 13, 2026';
 
 export default function Terms() {
   return (
@@ -42,6 +42,13 @@ export default function Terms() {
           <ul style={{ paddingLeft: '1.25rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <li>Use the Service for any unlawful purpose or in violation of any applicable laws.</li>
             <li>Post content that is abusive, harassing, obscene, or otherwise objectionable.</li>
+            <li>
+              <strong>Post, upload, or link to any sexually explicit, pornographic, or adult-only ("18+") content
+              of any kind</strong> — including but not limited to images, videos, product links, descriptions, or
+              wishlist items. This prohibition is absolute and applies to profile pictures, wishlist themes, item
+              descriptions, and any other user-generated content on the Service. Violations will result in
+              immediate account termination.
+            </li>
             <li>Attempt to gain unauthorized access to any part of the Service or its related systems.</li>
             <li>Use automated tools (bots, scrapers) to access or collect data from the Service without permission.</li>
             <li>Interfere with or disrupt the integrity or performance of the Service.</li>
@@ -52,6 +59,21 @@ export default function Terms() {
           You retain ownership of the content you create on the Service (wishlist items, descriptions, etc.).
           By posting content, you grant us a non-exclusive, worldwide license to display it as part of operating the Service.
           We do not claim ownership of your data and will not sell it to third parties.
+          <br /><br />
+          <strong>Amazon Associates compliance:</strong> The Service participates in the Amazon Associates Program.
+          As a condition of that program, all user-generated content — including wishlist items, images, and
+          descriptions — must comply with Amazon's{' '}
+          <a
+            href="https://affiliate-program.amazon.com/help/operating/policies"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--color-primary)' }}
+          >
+            Operating Agreement
+          </a>. You must not use the Service to promote, link to, or describe products or content that are
+          prohibited under Amazon's policies, including but not limited to adult-only products, illegal items,
+          or content that violates Amazon's community standards. We reserve the right to remove any content
+          that jeopardizes our participation in the Amazon Associates Program.
         </Section>
 
         <Section title="6. Affiliate links">

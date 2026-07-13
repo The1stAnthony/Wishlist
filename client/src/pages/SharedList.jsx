@@ -156,7 +156,25 @@ export default function SharedList() {
       <div>
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div style={{ textAlign: 'center', padding: '2rem 0 1.5rem' }}>
-          <p style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎂</p>
+          {/* Theme image or owner pfp */}
+          {(wishlist.theme_image_url || owner?.avatar_url) ? (
+            <img
+              src={wishlist.theme_image_url || owner?.avatar_url}
+              alt={wishlist.title}
+              style={{
+                width: wishlist.theme_image_url ? '100%' : 72,
+                maxHeight: wishlist.theme_image_url ? 220 : 72,
+                objectFit: 'cover',
+                borderRadius: wishlist.theme_image_url ? 'var(--radius-xl)' : '50%',
+                marginBottom: '1rem',
+                display: 'block',
+                margin: '0 auto 1rem',
+              }}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          ) : (
+            <p style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎂</p>
+          )}
           <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '0.25rem' }}>
             {wishlist.title}
           </h1>
