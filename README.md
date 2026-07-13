@@ -268,63 +268,91 @@ A structured QA pass across all pages and user flows:
 - Disabled visibility buttons carry `aria-disabled` ✅
 - `document.title` updates on every route ✅ (screen readers announce meaningful page names)
 - Add `alt` text discipline to all images — theme/item images use wishlist title as alt; owner avatars use owner name ✅
-- `og-image.png` is missing — needs a 1200×630px branded image in `client/public/`
+- `og-image.png` ✅ deployed at `client/public/og-image.png`; WhatsApp preview confirmed working
 - GDPR/CCPA: confirm Privacy Policy accurately describes data collected and stored
 - Cookie consent — no cookies used; JWT is localStorage only. Document this in Privacy Policy.
 
 ### 5. 🔍 SEO Hardening
-**Context:** There is a clothing brand named "All I Want" with far more domain authority. We need to signal clearly to search engines that alliwant.xyz is a software app, not a store.
+**Context:** There is a clothing brand named "All I Want" with far more domain authority. We need to signal clearly to search engines that alliwant.xyz is a software app, not a store. **SEO results pending — if domain authority gap proves insurmountable, a full rebrand may be required.**
 
 **Done:**
 - ✅ `robots.txt` — tells crawlers to index public pages and exclude auth-only pages
-- ✅ `sitemap.xml` — static sitemap submitted to Google Search Console
+- ✅ `sitemap.xml` — submitted to Google Search Console (pending GSC property review; resubmit in a few days)
 - ✅ `theme-color` meta tag for mobile browser chrome
-- ✅ Structured data: `FAQPage`, `SoftwareApplication`, `WebSite`, `Organization`, `ItemList` per page
+- ✅ Structured data: `SoftwareApplication`, `WebSite`, `Organization`, `ItemList` per page
 - ✅ Long-tail keywords updated in `<head>`
+- ✅ `og-image.png` deployed — link preview thumbnail confirmed on WhatsApp
+- ✅ HTTP → HTTPS redirect added to `vercel.json`
 
 **Still needed:**
-- Submit sitemap to Google Search Console: `alliwant.xyz/sitemap.xml`
-- Add `og:image` file — `client/public/og-image.png` (1200×630) needs to be created and deployed; currently referenced but missing
-- Consider adding a `/blog` or `/guides` page (e.g. "How to create a birthday wishlist") — content is the best long-term SEO against a larger brand
+- Consider adding a `/blog` or `/guides` page (e.g. "How to create a birthday wishlist") — content is the best long-term SEO play against a larger brand
 - Verify shared wishlist pages (`/list/:token`) are indexed by Google — they contain unique `ItemList` structured data that can rank in gift-search results
 
-### 6. 🛒 Amazon Products — **Critical Blocker**
-The current Search page uses a curated static catalog with placeholder images and no direct product links. This is not suitable for Beta.
+### 6. 🛒 Search Page — **Last Blocker Before Beta**
 
-**The problem:** The Amazon Product Advertising API (PA API) requires **3 qualifying sales** through your Associates account before access is granted. EU storefronts each require separate enrollment, and some (DE, FR, etc.) require additional qualifying purchase thresholds — effectively ~150 qualifying purchases across all 12 countries for full regional coverage.
+**Problem:** The Amazon Product Advertising API (PA API) requires 3 qualifying sales before access is granted. Without it, the Search page can only link to Amazon search results pages — no product images, no direct product links.
 
-**Options being evaluated:**
+**Decided approach — three-tier catalog:**
 
-| Option | Effort | Cost | Trade-off |
-|---|---|---|---|
-| Wait for PA API qualification | Low | Free | Requires organic sales first; US-only initially |
-| Rainforest API (third-party Amazon scraper) | Medium | ~$50/mo | Paid but immediate; ToS gray area |
-| Narrow to US-only search for Beta | Low | Free | Drops multi-country search; regional links still work on user-added items |
-| Reframe Search as "ideas board" (no Amazon links) | Low | Free | Removes dependency entirely; users paste their own links |
-| Browser extension "Add to AllIWant" | High | Free | Best long-term; bypasses API entirely |
+| Tier | Source | Images | Links | Display |
+|---|---|---|---|---|
+| **1. Direct** | Manually curated ASINs | ✅ Real product images | ✅ Specific product pages | Full card with image |
+| **2. Search handle** | Keyword-based (current behavior) | ❌ No image | Amazon search results | Text-only card |
+| **3. Expired** | Was Tier 1, now unavailable | ❌ | Dead link | Admin-only, scrolled to bottom |
 
-**Decision pending.** Likely path for Beta v0.1.0: narrow to US-only search using the static catalog (better curated), plus prompt US users to make purchases to earn PA API access. EU regional routing stays intact for user-added items regardless.
+**Implementation plan:**
+- Extend `products.js` data shape to include `image_url`, `product_url`, `source_type` (`'direct'|'handle'`), `status` (`'active'|'expired'`), `region` (`'US'|'UK'|...`)
+- Manually curate ~10–15 real ASINs per category for US — real images (stored as CDN URLs or downloaded thumbnails), real direct product page links
+- Frontend sorts: direct active → handle → expired (admin only)
+- Add "Write in a gift" hero at top of Search page so users can add items directly without finding them in search
+- When PA API access unlocks (after 3 sales), swap Tier 2 into real API results and Tier 1 expands automatically
+- Admin view: expired Tier 1 items float to bottom with a broken-link indicator for review
 
 ### 7. ✅ Final Pre-Beta Review
-- Replace Elfster for internal family use — full functional test with real users
-- Ensure all accounts can: add friends, create wishlists, share links, have gifts purchased
-- Verify email flows (if added before Beta)
-- Tag `v0.1.0` release on GitHub
+- **Early Access is open** — site is live, users can sign up now
+- Run smoke test: guest view, new account, add friends, create wishlist, share link, mark item purchased
+- Wire up SMTP env vars in Vercel (`MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`) so password reset emails actually send — until then, reset links only appear in Vercel function logs
+- **Marketing push for Early Access** — small campaign to get real users on the app; organic sales drive PA API qualification (3 purchases needed)
+- Tag `v0.1.0` release on GitHub after smoke test passes
 
 ---
 
 ## 📋 Deferred Backlog (Post-Beta)
 
+**Infrastructure & Safety**
 - [ ] **Rate limiting** — Upstash Redis + `@upstash/ratelimit` on login/register/forgot-password/contact; requires KV store (not available on Vercel Hobby without add-on)
-- [ ] **Email notifications** — birthday reminders, friend request alerts, purchase confirmations
-- [ ] **Groups / gift pools** — multiple contributors toward one item
-- [ ] **eCards** — send a digital birthday card through the app
-- [ ] **Gift card contributions** — chip in toward a list item monetarily
-- [ ] **Push notifications** (PWA) — opt-in birthday reminders on mobile
-- [ ] **Browser extension** — "Add to AllIWant" button on any product page
-- [ ] **AI gift suggestions** — describe the person, get curated ideas
 - [ ] **Test suite** — API route unit tests + key UI component tests
 - [ ] **CI/CD** — GitHub Actions lint + test on PRs
+- [ ] **Image storage migration** — move base64 theme/item images out of PostgreSQL TEXT columns into Cloudinary or S3; store URLs instead (current approach degrades at scale)
+- [ ] **AdSense audit** — if ads break layout or hurt UX on mobile, adjust slot placement or suppress on key pages
+
+**Notifications**
+- [ ] **Email notifications** — birthday reminders, friend request alerts, purchase confirmations
+- [ ] **Push notifications** (PWA) — opt-in birthday reminders on mobile
+
+**Social & Gifting**
+- [ ] **Groups / gift pools** — multiple contributors toward one item
+- [ ] **Gift card contributions** — chip in toward a list item monetarily
+- [ ] **eCards** — send a digital birthday card through the app
+
+**Events Page** (`/events`, replaces the deprecated `/birthdays` page)
+- [ ] Full event creation: date, type (birthday, wedding, graduation, etc.), linked wishlist
+- [ ] RSVP flow — guests can confirm attendance through the app
+- [ ] eCard sending tied to an event
+- [ ] The goal: one app for the full party lifecycle — no more juggling Evite + Amazon + Venmo + a card app
+- [ ] `/birthdays` page currently has deprecated/unused functionality; repurpose or replace with `/events`
+
+**Discovery & Search**
+- [ ] **PA API upgrade** — once 3 qualifying sales are reached, replace manual Tier 1 curated products with live Amazon PA API results per region; EU storefronts require separate enrollment
+- [ ] **Price filter on `/search`** — let users sort/filter catalog by price range
+- [ ] **Browser extension** — "Add to AllIWant" button on any product page (best long-term alternative to PA API)
+- [ ] **AI gift suggestions** — describe the person, get curated ideas
+
+**SEO contingency**
+- [ ] **Rebrand evaluation** — if SEO results after 3–6 months show the clothing brand "All I Want" is unbeatable on core terms, evaluate renaming the app and domain entirely
+
+**Beta tester input**
+- [ ] **Feature requests from Beta testers** — standing backlog slot; prioritize based on frequency and fit with the core vision after Beta launch
 
 ---
 
