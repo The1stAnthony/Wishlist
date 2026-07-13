@@ -10,8 +10,7 @@ const AMAZON_DOMAINS = {
   US: 'amazon.com',   CA: 'amazon.ca',    GB: 'amazon.co.uk',
   DE: 'amazon.de',    FR: 'amazon.fr',    IT: 'amazon.it',
   ES: 'amazon.es',    NL: 'amazon.nl',    SE: 'amazon.se',
-  PL: 'amazon.pl',    AU: 'amazon.com.au',JP: 'amazon.co.jp',
-  IN: 'amazon.in',    MX: 'amazon.com.mx',BR: 'amazon.com.br',
+  PL: 'amazon.pl',    AU: 'amazon.com.au',MX: 'amazon.com.mx',
 };
 
 function regionalizeAmazonUrl(url, country) {

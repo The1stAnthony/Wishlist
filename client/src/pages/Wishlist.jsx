@@ -7,6 +7,28 @@ import AdBanner from '../components/AdBanner';
 import WishlistItem from '../components/WishlistItem';
 import '../styles/pages/wishlist.css';
 
+const AMAZON_DOMAINS = {
+  US: 'amazon.com',   CA: 'amazon.ca',    GB: 'amazon.co.uk',
+  DE: 'amazon.de',    FR: 'amazon.fr',    IT: 'amazon.it',
+  ES: 'amazon.es',    NL: 'amazon.nl',    SE: 'amazon.se',
+  PL: 'amazon.pl',    AU: 'amazon.com.au',MX: 'amazon.com.mx',
+};
+
+function regionalizeAmazonUrl(url, country) {
+  if (!url || !country) return url;
+  const domain = AMAZON_DOMAINS[country];
+  if (!domain || domain === 'amazon.com') return url;
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes('amazon.')) return url;
+    parsed.hostname = domain;
+    parsed.searchParams.delete('tag');
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 const EMPTY_FORM = {
   name: '', description: '', price: '', url: '', image_url: '', priority: '2', quantity: '1',
 };
@@ -167,6 +189,15 @@ export default function Wishlist() {
 
   const currentVisibility = wishlist?.visibility || (wishlist?.is_public ? 'public' : 'friends');
   const shareUrl = `${window.location.origin}/list/${wishlist?.share_token}`;
+
+  const ownerCountry = user?.country || 'US';
+  function regionalize(item) {
+    if (ownerCountry === 'US') return item;
+    const regional = regionalizeAmazonUrl(item.affiliate_url || item.url, ownerCountry);
+    return regional !== (item.affiliate_url || item.url)
+      ? { ...item, affiliate_url: regional }
+      : item;
+  }
 
   return (
     <div className="page-with-sidebar">
@@ -539,7 +570,7 @@ export default function Wishlist() {
             {items.map((item) => (
               <WishlistItem
                 key={item.id}
-                item={item}
+                item={regionalize(item)}
                 onDelete={handleDeleteItem}
                 spoilerFree={Boolean(wishlist?.spoiler_free)}
                 onSelfPurchase={!wishlist?.spoiler_free ? handleSelfPurchase : undefined}

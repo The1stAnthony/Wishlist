@@ -302,28 +302,6 @@ export default function Profile() {
             </div>
 
             <div>
-              <label className="form-label">Country</label>
-              <select name="country" className="form-input" value={form.country} onChange={handleChange} required>
-                <option value="US">United States</option>
-                <option value="CA">Canada</option>
-                <option value="GB">United Kingdom</option>
-                <option value="AU">Australia</option>
-                <option value="DE">Germany</option>
-                <option value="FR">France</option>
-                <option value="IT">Italy</option>
-                <option value="ES">Spain</option>
-                <option value="NL">Netherlands</option>
-                <option value="SE">Sweden</option>
-                <option value="PL">Poland</option>
-                <option value="JP">Japan</option>
-                <option value="IN">India</option>
-                <option value="MX">Mexico</option>
-                <option value="BR">Brazil</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
-
-            <div>
               <label className="form-label">Email address</label>
               <input
                 className="form-input"
@@ -409,6 +387,24 @@ export default function Profile() {
             <div>
               <label className="form-label">ZIP / Postal code</label>
               <input name="zip_code" className="form-input" placeholder="10001" value={form.zip_code} onChange={handleChange} />
+            </div>
+
+            <div>
+              <label className="form-label">Country</label>
+              <select name="country" className="form-input" value={form.country} onChange={handleChange}>
+                <option value="US">United States</option>
+                <option value="CA">Canada</option>
+                <option value="GB">United Kingdom</option>
+                <option value="AU">Australia</option>
+                <option value="DE">Germany</option>
+                <option value="FR">France</option>
+                <option value="IT">Italy</option>
+                <option value="ES">Spain</option>
+                <option value="NL">Netherlands</option>
+                <option value="SE">Sweden</option>
+                <option value="PL">Poland</option>
+                <option value="MX">Mexico</option>
+              </select>
             </div>
           </div>
 
