@@ -279,7 +279,16 @@ router.get('/upcoming', requireAuth, async (req, res) => {
        WHERE f.status = 'accepted'
          AND w.event_date IS NOT NULL
          AND w.event_date::date >= CURRENT_DATE - INTERVAL '7 days'
-         AND COALESCE(w.visibility, 'public') IN ('public', 'friends', 'specific')
+         AND (
+           COALESCE(w.visibility, 'public') = 'friends'
+           OR (
+             COALESCE(w.visibility, 'public') = 'specific'
+             AND EXISTS (
+               SELECT 1 FROM wishlist_permissions wp
+               WHERE wp.wishlist_id = w.id AND wp.user_id = $1
+             )
+           )
+         )
        ORDER BY w.event_date::date ASC
        LIMIT 10`,
       [req.user.id]
