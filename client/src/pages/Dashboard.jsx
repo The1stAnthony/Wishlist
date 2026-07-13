@@ -130,13 +130,18 @@ export default function Dashboard() {
   const scrollRef = useRef(null);
 
   useEffect(() => {
+    const safe = (p, label) => p.catch((err) => {
+      console.warn(`[Dashboard] ${label} failed:`, err?.response?.data?.error || err?.message);
+      return { data: { wishlists: [], upcoming: [] } };
+    });
+
     Promise.all([
       axios.get('/api/wishlists/my'),
       axios.get('/api/birthdays/upcoming'),
-      axios.get('/api/follows/network-upcoming').catch(() => ({ data: { wishlists: [] } })),
-      axios.get('/api/follows/feed').catch(() => ({ data: { wishlists: [] } })),
-      axios.get('/api/friendships/feed').catch(() => ({ data: { wishlists: [] } })),
-      axios.get('/api/friendships/upcoming').catch(() => ({ data: { wishlists: [] } })),
+      safe(axios.get('/api/follows/network-upcoming'), 'network-upcoming'),
+      safe(axios.get('/api/follows/feed'),             'creator-feed'),
+      safe(axios.get('/api/friendships/feed'),         'friends-feed'),
+      safe(axios.get('/api/friendships/upcoming'),     'friends-upcoming'),
     ]).then(([listRes, bdayRes, netRes, feedRes, friendsFeedRes, friendsUpcomingRes]) => {
       setWishlists(listRes.data.wishlists);
       setUpcomingBdays(bdayRes.data.upcoming);
@@ -144,7 +149,10 @@ export default function Dashboard() {
       setCreatorFeed(feedRes.data.wishlists);
       setFriendsFeed(friendsFeedRes.data.wishlists);
       setFriendsUpcoming(friendsUpcomingRes.data.wishlists);
-    }).catch(() => setError('Failed to load your dashboard. Please refresh.'))
+    }).catch((err) => {
+      console.error('[Dashboard] Critical load error:', err);
+      setError('Failed to load your dashboard. Please refresh.');
+    })
       .finally(() => setLoading(false));
   }, []);
 
