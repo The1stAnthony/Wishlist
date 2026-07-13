@@ -602,16 +602,26 @@ export default function Wishlist() {
 
         {/* ── Items list ───────────────────────────────────────────────────── */}
         {items.length === 0 ? (
-          <div className="wishlist-empty">
-            <div className="wishlist-empty-icon">🎁</div>
-            <p className="wishlist-empty-title">Your wishlist is empty</p>
-            <p className="wishlist-empty-desc">
-              Write in a gift below, or{' '}
-              <Link to="/search" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
-                browse gift ideas
-              </Link>
-              {' '}on Amazon.
-            </p>
+          <div>
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+              padding: '0.875rem 1rem', borderRadius: 'var(--radius-md)',
+              background: '#FFFBEB', border: '1px solid #FCD34D',
+              marginBottom: '1rem', fontSize: '0.82rem', color: '#92400E',
+            }}>
+              <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>👻</span>
+              <p>
+                <strong>This list is invisible to friends and followers</strong> until you add at least one gift.
+                Write one in below or{' '}
+                <Link to="/search" style={{ color: '#92400E', fontWeight: 600, textDecoration: 'underline' }}>
+                  browse gift ideas
+                </Link>.
+              </p>
+            </div>
+            <div className="wishlist-empty">
+              <div className="wishlist-empty-icon">🎁</div>
+              <p className="wishlist-empty-title">Your wishlist is empty</p>
+            </div>
           </div>
         ) : (
           <div className="wishlist-items-list">

@@ -235,6 +235,7 @@ router.get('/feed', requireAuth, async (req, res) => {
          ON (f.requester_id = $1 AND f.addressee_id = w.user_id)
          OR (f.addressee_id = $1 AND f.requester_id = w.user_id)
        WHERE f.status = 'accepted'
+         AND (SELECT COUNT(*) FROM wishlist_items WHERE wishlist_id = w.id) > 0
          AND (
            COALESCE(w.visibility, 'public') = 'friends'
            OR (
@@ -279,6 +280,7 @@ router.get('/upcoming', requireAuth, async (req, res) => {
        WHERE f.status = 'accepted'
          AND w.event_date IS NOT NULL
          AND w.event_date::date >= CURRENT_DATE - INTERVAL '7 days'
+         AND (SELECT COUNT(*) FROM wishlist_items WHERE wishlist_id = w.id) > 0
          AND (
            COALESCE(w.visibility, 'public') = 'friends'
            OR (

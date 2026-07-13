@@ -166,6 +166,7 @@ router.get('/feed', requireAuth, async (req, res) => {
        WHERE f.follower_id = $1
          AND u.creator_mode = TRUE
          AND COALESCE(w.visibility, 'public') = 'public'
+         AND (SELECT COUNT(*) FROM wishlist_items WHERE wishlist_id = w.id) > 0
        ORDER BY COALESCE(
          (SELECT MAX(i.created_at) FROM wishlist_items i WHERE i.wishlist_id = w.id),
          w.created_at
@@ -199,6 +200,7 @@ router.get('/network-upcoming', requireAuth, async (req, res) => {
          AND COALESCE(w.visibility, 'public') = 'public'
          AND w.event_date IS NOT NULL
          AND w.event_date::date >= CURRENT_DATE - INTERVAL '7 days'
+         AND (SELECT COUNT(*) FROM wishlist_items WHERE wishlist_id = w.id) > 0
        ORDER BY w.event_date::date ASC
        LIMIT 10`,
       [req.user.id]
