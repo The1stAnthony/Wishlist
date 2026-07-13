@@ -218,7 +218,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
 // ── GET /api/friendships/feed ───────────────────────────────────────────────
 // Wishlists from accepted friends. Includes any visibility tier since the
-// viewer IS a friend. Excludes wishlists whose event date was more than 7 days ago.
+// viewer IS a friend. No date filter — shows all-time wishlists.
 
 router.get('/feed', requireAuth, async (req, res) => {
   try {
@@ -236,11 +236,10 @@ router.get('/feed', requireAuth, async (req, res) => {
          OR (f.addressee_id = $1 AND f.requester_id = w.user_id)
        WHERE f.status = 'accepted'
          AND COALESCE(w.visibility, 'public') IN ('public', 'friends', 'specific')
-         AND (w.event_date IS NULL OR w.event_date::date >= CURRENT_DATE - INTERVAL '7 days')
-       ORDER BY
-         CASE WHEN w.event_date IS NULL THEN 1 ELSE 0 END,
-         w.event_date::date ASC,
-         w.created_at DESC
+       ORDER BY COALESCE(
+         (SELECT MAX(i.created_at) FROM wishlist_items i WHERE i.wishlist_id = w.id),
+         w.created_at
+       ) DESC
        LIMIT 30`,
       [req.user.id]
     );

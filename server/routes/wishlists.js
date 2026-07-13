@@ -10,12 +10,14 @@ const router = express.Router();
 router.get('/my', requireAuth, async (req, res) => {
   try {
     const wishlists = await query(
-      `SELECT w.*, COUNT(i.id)::int AS item_count
+      `SELECT w.*,
+              COUNT(i.id)::int AS item_count,
+              MAX(i.created_at) AS last_item_at
        FROM wishlists w
        LEFT JOIN wishlist_items i ON i.wishlist_id = w.id
        WHERE w.user_id = $1
        GROUP BY w.id
-       ORDER BY w.created_at DESC`,
+       ORDER BY COALESCE(MAX(i.created_at), w.created_at) DESC`,
       [req.user.id]
     );
     res.json({ wishlists });

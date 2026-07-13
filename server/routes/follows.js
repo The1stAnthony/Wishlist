@@ -165,11 +165,10 @@ router.get('/feed', requireAuth, async (req, res) => {
        JOIN follows f ON f.followed_id = w.user_id
        WHERE f.follower_id = $1
          AND COALESCE(w.visibility, 'public') = 'public'
-         AND (w.event_date IS NULL OR w.event_date::date >= CURRENT_DATE - INTERVAL '7 days')
-       ORDER BY
-         CASE WHEN w.event_date IS NULL THEN 1 ELSE 0 END,
-         w.event_date::date ASC,
-         w.created_at DESC
+       ORDER BY COALESCE(
+         (SELECT MAX(i.created_at) FROM wishlist_items i WHERE i.wishlist_id = w.id),
+         w.created_at
+       ) DESC
        LIMIT 20`,
       [req.user.id]
     );
