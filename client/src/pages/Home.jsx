@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import JsonLd from '../components/JsonLd';
 import '../styles/pages/home.css';
 
 const FEATURES = [
   { icon: '🎂', title: 'Tied to any event', desc: 'Wishlists connect directly to birthdays, anniversaries, or any occasion — so your upcoming events dashboard always shows the right lists at the right time.' },
   { icon: '🛍️', title: 'Shop any retailer', desc: 'Add gifts from Amazon, Target, Etsy, or anywhere online. Paste a link and it\'s on your list instantly.' },
-  { icon: '👁️', title: 'Shopper mode (spoiler-free)', desc: 'Gifters can browse and claim items without the recipient ever seeing what\'s been purchased. No spoilers, no duplicates.' },
+  { icon: '👁️', title: 'Spoiler-free shopping', desc: 'Gifters can browse and claim items behind the scenes — the recipient never sees what\'s been purchased until unwrapping day. No spoilers, no duplicates.' },
+  { icon: '🎁', title: 'Shop your own list', desc: 'Want to treat yourself before your birthday? Shopper mode lets you buy off your own wishlist without seeing what others have already claimed. "No need to wait!"' },
+  { icon: '🔗', title: 'Cross-wishlist coordination', desc: 'When a fan buys you a gift from your creator wishlist, it\'s marked purchased everywhere — so your family never doubles up on the same item from your personal list.' },
   { icon: '🔒', title: 'Private wishlists', desc: 'Create friends-only lists for your significant other or a small group. Keep spicy or sentimental gifts exactly where they belong.' },
 ];
 
@@ -42,11 +45,22 @@ const FAQS = [
   },
 ];
 
+const FAQ_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQS.map((faq) => ({
+    '@type': 'Question',
+    name: faq.q,
+    acceptedAnswer: { '@type': 'Answer', text: faq.a },
+  })),
+};
+
 export default function Home() {
   const { user } = useAuth();
 
   return (
     <>
+      <JsonLd data={FAQ_SCHEMA} />
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section className="hero">
         <span className="hero-decoration" style={{ top: '10%', left: '8%' }}>🎁</span>

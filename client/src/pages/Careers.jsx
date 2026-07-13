@@ -1,8 +1,19 @@
 import { Link } from 'react-router-dom';
+import JsonLd from '../components/JsonLd';
+
+const SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://alliwant.xyz' },
+    { '@type': 'ListItem', position: 2, name: 'Careers', item: 'https://alliwant.xyz/careers' },
+  ],
+};
 
 export default function Careers() {
   return (
     <div style={{ maxWidth: 680, margin: '0 auto', padding: '3rem 1.5rem', textAlign: 'center' }}>
+      <JsonLd data={SCHEMA} />
       <Link to="/" style={{ color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.875rem', display: 'inline-block', marginBottom: '2rem' }}>
         ← Home
       </Link>

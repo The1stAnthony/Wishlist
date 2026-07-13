@@ -54,6 +54,14 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'An account with that email already exists' });
     }
 
+    const cleanHandle = display_name?.trim() || null;
+    if (cleanHandle) {
+      const handleTaken = await queryOne('SELECT id FROM users WHERE display_name = $1', [cleanHandle]);
+      if (handleTaken) {
+        return res.status(409).json({ error: 'That handle is already taken. Please choose another.' });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const inserted = await queryOne(
@@ -61,7 +69,7 @@ router.post('/register', async (req, res) => {
                           street_address, city, state, zip_code, country)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id`,
-      [name, display_name?.trim() || null, email.toLowerCase().trim(), hashedPassword, birthday || null,
+      [name, cleanHandle, email.toLowerCase().trim(), hashedPassword, birthday || null,
        street_address || null, city || null, state || null, zip_code || null, country || 'US']
     );
 

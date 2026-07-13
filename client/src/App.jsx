@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import ScrollToTop from './components/ScrollToTop';
 
 import Navbar          from './components/Navbar';
 import Footer          from './components/Footer';
@@ -40,6 +41,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <ScrollToTop />
       <Navbar />
 
       <main className="main-content">

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import GiftCard from '../components/GiftCard';
 import AdBanner from '../components/AdBanner';
+import JsonLd from '../components/JsonLd';
 import { useAuth } from '../context/AuthContext';
 
 /**
@@ -58,8 +59,44 @@ export default function SharedList() {
   const unpurchased = items.filter((i) => (i.purchased_count || 0) < (i.quantity || 1));
   const purchased   = items.filter((i) => (i.purchased_count || 0) >= (i.quantity || 1));
 
+  const listSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: wishlist.title,
+    description: wishlist.description || `${owner?.shown_name}'s birthday wishlist on All I Want`,
+    url: `https://alliwant.xyz/list/${token}`,
+    numberOfItems: items.length,
+    ...(wishlist.event_date && {
+      'schema:startDate': wishlist.event_date,
+    }),
+    itemListElement: items.map((item, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      item: {
+        '@type': 'Product',
+        name: item.name,
+        ...(item.description && { description: item.description }),
+        ...(item.image_url && { image: item.image_url }),
+        ...(item.price && {
+          offers: {
+            '@type': 'Offer',
+            price: String(item.price),
+            priceCurrency: 'USD',
+            availability: (item.purchased_count || 0) >= (item.quantity || 1)
+              ? 'https://schema.org/SoldOut'
+              : 'https://schema.org/InStock',
+            ...(item.affiliate_url || item.url
+              ? { url: item.affiliate_url || item.url }
+              : {}),
+          },
+        }),
+      },
+    })),
+  };
+
   return (
     <div className="page-with-sidebar">
+      <JsonLd data={listSchema} />
       <div>
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div style={{ textAlign: 'center', padding: '2rem 0 1.5rem' }}>

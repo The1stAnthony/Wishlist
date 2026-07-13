@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import GiftCard from '../components/GiftCard';
+import JsonLd from '../components/JsonLd';
 import '../styles/pages/public-profile.css';
 
 const AVATAR_COLORS = ['#7C3AED', '#DC2626', '#2563EB', '#059669', '#D97706', '#DB2777'];
@@ -74,8 +75,38 @@ export default function PublicProfile() {
   const displayName = creator.display_name || creator.name;
   const avatarColor = hashColor(displayName);
 
+  const profileSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    name: `@${displayName}'s Wishlists — All I Want`,
+    url: `https://alliwant.xyz/u/${handle}`,
+    dateCreated: creator.created_at,
+    mainEntity: {
+      '@type': 'Person',
+      name: displayName,
+      identifier: `@${displayName}`,
+      url: `https://alliwant.xyz/u/${handle}`,
+      ...(creator.avatar_url && { image: creator.avatar_url }),
+      interactionStatistic: {
+        '@type': 'InteractionCounter',
+        interactionType: 'https://schema.org/FollowAction',
+        userInteractionCount: creator.follower_count || 0,
+      },
+    },
+    ...(wishlists.length > 0 && {
+      hasPart: wishlists.map((w) => ({
+        '@type': 'ItemList',
+        name: w.title,
+        url: `https://alliwant.xyz/list/${w.share_token}`,
+        numberOfItems: w.item_count,
+        ...(w.event_date && { 'schema:startDate': w.event_date }),
+      })),
+    }),
+  };
+
   return (
     <div className="profile-pub-page">
+      <JsonLd data={profileSchema} />
       {/* ── Creator header ─────────────────────────────────────────────────── */}
       <div className="profile-pub-header">
         {creator.avatar_url ? (

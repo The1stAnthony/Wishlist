@@ -3,14 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="All I Want — share your birthday wishlist so the people who love you actually get you what you want." />
+    <meta name="description" content="All I Want — the free birthday wishlist and gift registry app. Share your list from any store, track friends' birthdays, and get exactly what you want. The modern alternative to Amazon wishlists, Elfster, and Throne." />
+    <meta name="keywords" content="birthday wishlist, gift registry, wishlist app, birthday gifts, gift tracker, birthday reminder, creator wishlist, Elfster alternative, Throne alternative, Amazon wishlist alternative, all I want, alliwant" />
+    <meta name="author" content="All I Want" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://alliwant.xyz" />
 
     <title>All I Want – Birthday Wishlists & Gift Registry</title>
 
     <!-- Open Graph — controls the preview card when your link is shared on iMessage, Twitter, Facebook, etc. -->
     <meta property="og:type"        content="website" />
     <meta property="og:title"       content="All I Want – Birthday Wishlists & Gift Registry" />
-    <meta property="og:description" content="Share your birthday wishlist so the people who love you actually get you what you want. No more wrong gifts." />
+    <meta property="og:description" content="Share your birthday wishlist from any store, track friends' birthdays, and get gifts you actually want. Free forever — the modern alternative to Amazon wishlists and Elfster." />
     <meta property="og:url"         content="https://alliwant.xyz" />
     <meta property="og:image"       content="https://alliwant.xyz/og-image.png" />
     <meta property="og:site_name"   content="All I Want" />
@@ -22,6 +26,66 @@
     <meta name="twitter:image"       content="https://alliwant.xyz/og-image.png" />
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>" />
+
+    <!-- Structured data: WebSite + Organization (crawled before React loads) -->
+    <script type="application/ld+json">
+    [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "All I Want",
+        "alternateName": ["All I Want Birthday Wishlist", "alliwant", "alliwant.xyz"],
+        "url": "https://alliwant.xyz",
+        "description": "Free birthday wishlist and gift registry app. Add gifts from any store, share one link, track friends' birthdays, and get exactly what you want. The modern alternative to Amazon wishlists, Elfster, and Throne.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://alliwant.xyz/search?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "All I Want",
+        "url": "https://alliwant.xyz",
+        "logo": "https://alliwant.xyz/og-image.png",
+        "sameAs": ["https://github.com/The1stAnthony"],
+        "foundingDate": "2026",
+        "description": "Birthday wishlist and gift registry platform for everyone who has a birthday — and their fans.",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer support",
+          "url": "https://alliwant.xyz/contact"
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "All I Want",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "Web, iOS Safari, Android Chrome",
+        "url": "https://alliwant.xyz",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Build a birthday wishlist from any store, share one link, and let the people who love you shop with confidence. Free forever.",
+        "featureList": [
+          "Add gifts from any online store",
+          "Share wishlists via one link",
+          "Birthday tracker with reminders",
+          "Spoiler-free gifting for shoppers",
+          "Private and friends-only wishlists",
+          "Creator mode with alias and PO box",
+          "Cross-wishlist duplicate prevention"
+        ]
+      }
+    ]
+    </script>
 
     <!-- Inter font from Google Fonts — clean, modern, readable -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

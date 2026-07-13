@@ -26,7 +26,10 @@ router.post('/', async (req, res) => {
   }
 
   const refId   = Date.now().toString(36).toUpperCase();
-  const mailTo  = process.env.CONTACT_EMAIL || 'sean.a.protho1@gmail.com';
+  const mailTo  = process.env.CONTACT_EMAIL;
+  if (!mailTo) {
+    console.warn('[CONTACT] CONTACT_EMAIL env var not set — logging to console instead');
+  }
   const mailSubject = `All I Want: ${name.trim()} — ${subject} [#${refId}]`;
 
   const body = [
@@ -38,14 +41,16 @@ router.post('/', async (req, res) => {
     message.trim(),
   ].join('\n');
 
-  if (transporter) {
+  if (transporter && mailTo) {
     try {
       await transporter.sendMail({
-        from:    `"All I Want Contact" <${process.env.MAIL_USER}>`,
-        replyTo: email || undefined,
-        to:      mailTo,
-        subject: mailSubject,
-        text:    body,
+        from:     `"All I Want" <${process.env.MAIL_USER}>`,
+        replyTo:  email || undefined,
+        to:       mailTo,
+        subject:  mailSubject,
+        text:     body,
+        priority: 'high',
+        headers:  { 'X-Priority': '1', 'Importance': 'High' },
       });
     } catch (err) {
       console.error('Contact email error:', err);

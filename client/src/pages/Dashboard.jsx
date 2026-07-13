@@ -243,12 +243,7 @@ export default function Dashboard() {
   if (loading) return <div className="page-loading">Loading your dashboard…</div>;
 
   return (
-    <div className="page-with-sidebar-3col">
-      {/* ── Left sidebar ads ────────────────────────────────────────────────── */}
-      <aside className="sidebar-ads-left ad-sidebar">
-        <AdBanner format="sidebar" />
-      </aside>
-
+    <div className="page-with-sidebar">
       <div>
         {/* ── Greeting ──────────────────────────────────────────────────────── */}
         <div className="dashboard-header">
@@ -299,20 +294,32 @@ export default function Dashboard() {
         )}
 
         {/* ── Upcoming Birthdays / Events ───────────────────────────────────── */}
-        {allUpcoming.length > 0 && (
-          <section className="dashboard-section" style={{ marginBottom: '2rem', border: 'none', padding: 0 }}>
-            <div className="dashboard-section-header">
-              <h2 className="section-title">🎂 Upcoming Birthdays / Events</h2>
+        <section className="dashboard-section" style={{ marginBottom: '2rem', border: 'none', padding: 0 }}>
+          <div className="dashboard-section-header">
+            <h2 className="section-title">🎂 Upcoming Birthdays / Events</h2>
+            {allUpcoming.length > 0 && (
               <div style={{ display: 'flex', gap: '0.25rem' }}>
                 <button className="scroll-arrow" onClick={() => scrollEvents(-1)} aria-label="Scroll left">‹</button>
                 <button className="scroll-arrow" onClick={() => scrollEvents(1)} aria-label="Scroll right">›</button>
               </div>
-            </div>
+            )}
+          </div>
+          {allUpcoming.length > 0 ? (
             <div className="event-scroll" ref={scrollRef}>
               {allUpcoming.map((item) => <EventCard key={item.id} item={item} />)}
             </div>
-          </section>
-        )}
+          ) : (
+            <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+              <p style={{ marginBottom: '0.4rem' }}>No upcoming events yet.</p>
+              <p>
+                <Link to="/friends" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Add friends</Link>
+                {' '}to see their upcoming wishlists, or{' '}
+                <Link to="/birthdays" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>track birthdays</Link>
+                {' '}to get reminded ahead of time.
+              </p>
+            </div>
+          )}
+        </section>
 
         {/* ── My Wishlists ──────────────────────────────────────────────────── */}
         <section className="dashboard-section dashboard-section--mine">
@@ -427,6 +434,11 @@ export default function Dashboard() {
           )}
         </section>
 
+        {/* ── Ad banner between sections ────────────────────────────────────── */}
+        <div style={{ marginTop: '2rem' }}>
+          <AdBanner format="horizontal" />
+        </div>
+
         {/* ── Creators' Wishlists ───────────────────────────────────────────── */}
         <section className="dashboard-section" style={{ marginTop: '2rem' }}>
           <div className="dashboard-section-header">
@@ -468,8 +480,8 @@ export default function Dashboard() {
         </section>
       </div>
 
-      {/* ── Right sidebar ads ───────────────────────────────────────────────── */}
-      <aside className="sidebar-ads ad-sidebar">
+      {/* ── Right sidebar ads (start at Friends' Wishlists level) ────────────── */}
+      <aside className="sidebar-ads ad-sidebar" style={{ paddingTop: '2rem' }}>
         <AdBanner format="sidebar" />
         <AdBanner format="sidebar" />
       </aside>

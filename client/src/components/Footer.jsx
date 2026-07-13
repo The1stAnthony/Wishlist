@@ -1,8 +1,14 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../styles/components/footer.css';
 
 export default function Footer() {
-  const year = new Date().getFullYear();
+  const year     = new Date().getFullYear();
+  const navigate = useNavigate();
+
+  function goHome() {
+    navigate('/');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
 
   return (
     <footer className="footer">
@@ -24,7 +30,7 @@ export default function Footer() {
         <div>
           <p className="footer-heading">Product</p>
           <div className="footer-links">
-            <Link to="/"          className="footer-link">Home</Link>
+            <button onClick={goHome} className="footer-link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>Home</button>
             <Link to="/register"  className="footer-link">Create a Wishlist</Link>
             <Link to="/search"    className="footer-link">Find Gifts</Link>
             <Link to="/dashboard" className="footer-link">Dashboard</Link>
@@ -54,6 +60,7 @@ export default function Footer() {
             @The1stAnthony
           </a>
         </span>
+
         <a
           href="https://www.buymeacoffee.com/seanaprothu"
           target="_blank"
@@ -62,6 +69,8 @@ export default function Footer() {
         >
           ☕ Buy me a coffee
         </a>
+
+        <span>Made with 🎂 for birthday lovers</span>
       </div>
     </footer>
   );
