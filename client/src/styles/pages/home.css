@@ -139,6 +139,13 @@
 @media (max-width: 768px) {
   .creator-inner {
     grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .creator-list {
+    text-align: left;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

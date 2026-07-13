@@ -245,7 +245,7 @@ export default function Friends() {
 
       {/* Creator block */}
       {user?.creator_mode && (
-        <button className="friends-creator-block" onClick={() => setView('followers')} aria-label="View your followers">
+        <button className="friends-creator-block" style={{ marginBottom: '1.5rem' }} onClick={() => setView('followers')} aria-label="View your followers">
           <div className="friends-creator-left">
             <p className="friends-follower-label">Followers:</p>
             {previewAvatars.length > 0 && (

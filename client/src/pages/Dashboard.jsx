@@ -314,9 +314,9 @@ export default function Dashboard() {
               <p style={{ marginBottom: '0.4rem' }}>No upcoming events yet.</p>
               <p>
                 <Link to="/friends" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Add friends</Link>
-                {' '}to see their upcoming wishlists, or{' '}
-                <Link to="/birthdays" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>track birthdays</Link>
-                {' '}to get reminded ahead of time.
+                {' '}or{' '}
+                <Link to="/friends" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>follow creators</Link>
+                {' '}to see their upcoming wishlists here.
               </p>
             </div>
           )}

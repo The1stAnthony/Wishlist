@@ -43,16 +43,21 @@ export default function Register() {
       return;
     }
 
+    if (!form.birthday) {
+      setError('Please enter your birthday so friends can track it.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const address = showAddress ? {
-        street_address: form.street_address || null,
-        city:           form.city           || null,
-        state:          form.state          || null,
-        zip_code:       form.zip_code       || null,
-        country:        form.country        || 'US',
-      } : null;
+      const address = {
+        street_address: showAddress ? (form.street_address || null) : null,
+        city:           showAddress ? (form.city           || null) : null,
+        state:          showAddress ? (form.state          || null) : null,
+        zip_code:       showAddress ? (form.zip_code       || null) : null,
+        country:        form.country || 'US',
+      };
       await register(form.name, form.email, form.password, form.birthday || undefined, form.display_name || undefined, address);
       navigate('/dashboard');
     } catch (err) {
@@ -200,12 +205,7 @@ export default function Register() {
 
           {/* Birthday */}
           <div>
-            <label className="form-label" htmlFor="birthday">
-              Your birthday{' '}
-              <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>
-                (optional — lets friends track it)
-              </span>
-            </label>
+            <label className="form-label" htmlFor="birthday">Your birthday</label>
             <input
               id="birthday"
               name="birthday"
@@ -213,7 +213,38 @@ export default function Register() {
               className="form-input"
               value={form.birthday}
               onChange={handleChange}
+              required
             />
+          </div>
+
+          {/* Country */}
+          <div>
+            <label className="form-label" htmlFor="country">Country</label>
+            <select
+              id="country"
+              name="country"
+              className="form-input"
+              value={form.country}
+              onChange={handleChange}
+              required
+            >
+              <option value="US">United States</option>
+              <option value="CA">Canada</option>
+              <option value="GB">United Kingdom</option>
+              <option value="AU">Australia</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+              <option value="IT">Italy</option>
+              <option value="ES">Spain</option>
+              <option value="NL">Netherlands</option>
+              <option value="SE">Sweden</option>
+              <option value="PL">Poland</option>
+              <option value="JP">Japan</option>
+              <option value="IN">India</option>
+              <option value="MX">Mexico</option>
+              <option value="BR">Brazil</option>
+              <option value="OTHER">Other</option>
+            </select>
           </div>
 
           {/* Optional shipping address */}
