@@ -453,10 +453,15 @@ export default function Wishlist() {
                     {f.avatar_url
                       ? <img src={f.avatar_url} alt={f.friend_name} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
                       : <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#7C3AED', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {(f.display_name || f.friend_name || '?').charAt(0).toUpperCase()}
+                          {(f.friend_name || '?').charAt(0).toUpperCase()}
                         </div>
                     }
-                    <span style={{ color: 'var(--color-text)' }}>{f.display_name || f.friend_name}</span>
+                    <span style={{ color: 'var(--color-text)' }}>
+                      {f.friend_name}
+                      {f.display_name && (
+                        <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.3rem' }}>@{f.display_name}</span>
+                      )}
+                    </span>
                   </label>
                 ))}
               </div>

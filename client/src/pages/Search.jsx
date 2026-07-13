@@ -38,23 +38,33 @@ const CATEGORY_META = {
   food:       { label: 'Food & Drink',       color: '#FFF7ED', icon: '🍫' },
 };
 
+const EMPTY_WRITE_IN = { name: '', url: '', description: '', price: '' };
+
 export default function Search() {
   const { user } = useAuth();
 
+  // Products / search
   const [query,          setQuery]          = useState('');
   const [products,       setProducts]       = useState([]);
   const [activeCategory, setActiveCategory] = useState(null);
   const [searching,      setSearching]      = useState(false);
 
-  // Add-to-wishlist modal state
-  const [modalItem,    setModalItem]    = useState(null);
-  const [wishlists,    setWishlists]    = useState([]);
-  const [adding,       setAdding]       = useState(false);
-  const [addSuccess,   setAddSuccess]   = useState('');
-  const [addError,     setAddError]     = useState('');
+  // Modal: null | 'product' | 'write-in' | 'auth-prompt'
+  const [modalMode,      setModalMode]      = useState(null);
+  const [modalProduct,   setModalProduct]   = useState(null);
+  const [wishlists,      setWishlists]      = useState([]);
+  const [selectedListIds, setSelectedListIds] = useState(new Set());
 
-  // Auth prompt for non-logged-in users who click "Add to list"
-  const [authPromptItem, setAuthPromptItem] = useState(null);
+  // Write-in form
+  const [writeInForm, setWriteInForm] = useState(EMPTY_WRITE_IN);
+  const [scraping,    setScraping]    = useState(false);
+
+  // Status
+  const [adding,     setAdding]     = useState(false);
+  const [addSuccess, setAddSuccess] = useState('');
+  const [addError,   setAddError]   = useState('');
+
+  useEffect(() => { document.title = 'Find Gifts – All I Want'; }, []);
 
   // Load all products on mount
   useEffect(() => {
@@ -92,35 +102,102 @@ export default function Search() {
     loadProducts(null, null);
   }
 
-  // ── Add-to-wishlist modal ─────────────────────────────────────────────────
+  // ── Modal helpers ─────────────────────────────────────────────────────────
 
-  async function openModal(product) {
-    setModalItem(product);
-    setAddSuccess('');
-    setAddError('');
-    if (wishlists.length === 0) {
-      try {
-        const r = await axios.get('/api/wishlists/my');
-        setWishlists(r.data.wishlists);
-      } catch {
-        setAddError('Could not load your wishlists.');
-      }
+  async function loadWishlists() {
+    if (wishlists.length > 0) return;
+    try {
+      const r = await axios.get('/api/wishlists/my');
+      setWishlists(r.data.wishlists);
+    } catch {
+      setAddError('Could not load your wishlists.');
     }
   }
 
-  async function addToWishlist(wishlistId) {
-    if (!modalItem) return;
+  function closeModal() {
+    setModalMode(null);
+    setModalProduct(null);
+    setSelectedListIds(new Set());
+    setWriteInForm(EMPTY_WRITE_IN);
+    setAddSuccess('');
+    setAddError('');
+  }
+
+  function toggleList(id) {
+    setSelectedListIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function openProductModal(product) {
+    if (!user) { setModalProduct(product); setModalMode('auth-prompt'); return; }
+    setModalProduct(product);
+    setSelectedListIds(new Set());
+    setAddSuccess('');
+    setAddError('');
+    setModalMode('product');
+    await loadWishlists();
+  }
+
+  function openWriteIn() {
+    if (!user) { setModalProduct(null); setModalMode('auth-prompt'); return; }
+    setWriteInForm(EMPTY_WRITE_IN);
+    setSelectedListIds(new Set());
+    setAddSuccess('');
+    setAddError('');
+    setModalMode('write-in');
+    loadWishlists();
+  }
+
+  async function scrapeUrl() {
+    if (!writeInForm.url.trim()) return;
+    setScraping(true);
+    try {
+      const r = await axios.get(`/api/scrape?url=${encodeURIComponent(writeInForm.url.trim())}`);
+      const d = r.data;
+      setWriteInForm((prev) => ({
+        ...prev,
+        name:        d.title       || prev.name,
+        description: d.description || prev.description,
+        price:       d.price != null ? String(d.price) : prev.price,
+      }));
+    } catch {
+      // silent — user fills manually
+    } finally {
+      setScraping(false);
+    }
+  }
+
+  async function addToSelectedLists() {
+    if (selectedListIds.size === 0) return;
     setAdding(true);
     setAddError('');
+
+    const itemData = modalMode === 'write-in'
+      ? {
+          name:        writeInForm.name.trim(),
+          description: writeInForm.description || undefined,
+          price:       writeInForm.price ? parseFloat(writeInForm.price) : undefined,
+          url:         writeInForm.url.trim() || undefined,
+        }
+      : {
+          name:        modalProduct.name,
+          description: modalProduct.description,
+          price:       modalProduct.price,
+          url:         modalProduct.amazon_url,
+        };
+
     try {
-      await axios.post(`/api/wishlists/${wishlistId}/items`, {
-        name:        modalItem.name,
-        description: modalItem.description,
-        price:       modalItem.price,
-        url:         modalItem.amazon_url,
-      });
-      setAddSuccess(`Added to your list!`);
-      setTimeout(() => { setModalItem(null); setAddSuccess(''); }, 1500);
+      // Sequential POSTs — server auto-links same URL across lists via item_group_id
+      for (const listId of selectedListIds) {
+        await axios.post(`/api/wishlists/${listId}/items`, itemData);
+      }
+      const count = selectedListIds.size;
+      setAddSuccess(`Added to ${count} list${count !== 1 ? 's' : ''}!`);
+      setTimeout(() => closeModal(), 1500);
     } catch {
       setAddError('Could not add item. Please try again.');
     } finally {
@@ -130,14 +207,18 @@ export default function Search() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const catLabel = activeCategory ? CATEGORY_META[activeCategory]?.label : null;
+  const catLabel  = activeCategory ? CATEGORY_META[activeCategory]?.label : null;
+  const canSubmit = selectedListIds.size > 0 && (modalMode === 'product' || writeInForm.name.trim());
 
   return (
     <div>
       <AdBanner format="horizontal" />
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="search-hero">
+      <div className="search-hero" style={{ position: 'relative' }}>
+        <button className="write-in-btn" onClick={openWriteIn}>
+          ✏️ Write in a gift
+        </button>
         <h1 className="search-hero-title">🔍 Find the perfect gift</h1>
         <p className="search-hero-sub">Browse gift ideas and add them to your wishlist in one click</p>
         <form onSubmit={handleSearch}>
@@ -189,7 +270,7 @@ export default function Search() {
           </div>
         )}
 
-        {/* ── Product grid (3 columns) ───────────────────────────────────── */}
+        {/* ── Product grid ──────────────────────────────────────────────── */}
         {products.length === 0 ? (
           <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '3rem 0' }}>
             No gifts found — try a different search.
@@ -200,22 +281,14 @@ export default function Search() {
               const meta = CATEGORY_META[p.category] || {};
               return (
                 <div key={p.id} className="product-card">
-                  {/* Image area */}
-                  <div
-                    className="product-card-image"
-                    style={{ backgroundColor: meta.color || '#F3F4F6' }}
-                  >
+                  <div className="product-card-image" style={{ backgroundColor: meta.color || '#F3F4F6' }}>
                     <span className="product-card-icon">{p.icon}</span>
                   </div>
-
-                  {/* Info */}
                   <div className="product-card-body">
                     <p className="product-card-name">{p.name}</p>
                     <p className="product-card-desc">{p.description}</p>
                     <p className="product-card-price">${p.price.toLocaleString()}</p>
                   </div>
-
-                  {/* Actions */}
                   <div className="product-card-actions">
                     <a
                       href={regionalizeAmazonUrl(p.amazon_url, user?.country || 'US')}
@@ -225,21 +298,9 @@ export default function Search() {
                     >
                       🛒 View on Amazon
                     </a>
-                    {user ? (
-                      <button
-                        className="product-card-add"
-                        onClick={() => openModal(p)}
-                      >
-                        + Add to list
-                      </button>
-                    ) : (
-                      <button
-                        className="product-card-add"
-                        onClick={() => setAuthPromptItem(p)}
-                      >
-                        + Add to list
-                      </button>
-                    )}
+                    <button className="product-card-add" onClick={() => openProductModal(p)}>
+                      + Add to list
+                    </button>
                   </div>
                 </div>
               );
@@ -269,70 +330,172 @@ export default function Search() {
 
       </div>
 
-      {/* ── Auth prompt modal (non-logged-in users) ───────────────────────── */}
-      {authPromptItem && (
-        <div className="modal-overlay" onClick={() => setAuthPromptItem(null)}>
+      {/* ── Auth prompt modal ─────────────────────────────────────────────── */}
+      {modalMode === 'auth-prompt' && (
+        <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ textAlign: 'center' }}>
-            <button className="modal-close" onClick={() => setAuthPromptItem(null)} style={{ position: 'absolute', top: 12, right: 12 }}>✕</button>
+            <button className="modal-close" onClick={closeModal} style={{ position: 'absolute', top: 12, right: 12 }}>✕</button>
             <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎁</p>
             <p style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.4rem', color: 'var(--color-text)' }}>
-              Save <em>{authPromptItem.name}</em> to your wishlist
+              {modalProduct ? `Save ${modalProduct.name} to your wishlist` : 'Write in a gift'}
             </p>
             <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem', lineHeight: 1.5 }}>
               Create a free account to build wishlists from any store and share them with friends &amp; family.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link to="/register" className="btn-primary" onClick={() => setAuthPromptItem(null)}>
-                Create free account
-              </Link>
-              <Link to="/login" className="btn-ghost" onClick={() => setAuthPromptItem(null)}>
-                Sign in
-              </Link>
+              <Link to="/register" className="btn-primary" onClick={closeModal}>Create free account</Link>
+              <Link to="/login" className="btn-ghost" onClick={closeModal}>Sign in</Link>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Add-to-wishlist modal ──────────────────────────────────────────── */}
-      {modalItem && (
-        <div className="modal-overlay" onClick={() => setModalItem(null)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+      {/* ── Add-to-list / Write-in modal ──────────────────────────────────── */}
+      {(modalMode === 'product' || modalMode === 'write-in') && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-box modal-box--tall" onClick={(e) => e.stopPropagation()}>
+
             <div className="modal-header">
-              <p className="modal-title">Add to which wishlist?</p>
-              <button className="modal-close" onClick={() => setModalItem(null)}>✕</button>
-            </div>
-
-            <div
-              className="product-card-image"
-              style={{ backgroundColor: CATEGORY_META[modalItem.category]?.color || '#F3F4F6', borderRadius: 'var(--radius-md)', marginBottom: '0.75rem', height: 80 }}
-            >
-              <span style={{ fontSize: '2rem' }}>{modalItem.icon}</span>
-            </div>
-            <p style={{ fontWeight: 700, marginBottom: '0.25rem', fontSize: '0.9rem' }}>{modalItem.name}</p>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '1rem' }}>${modalItem.price.toLocaleString()}</p>
-
-            {addSuccess && <p style={{ color: '#059669', fontWeight: 600, marginBottom: '0.75rem', fontSize: '0.875rem' }}>✅ {addSuccess}</p>}
-            {addError   && <p style={{ color: '#EF4444', marginBottom: '0.75rem', fontSize: '0.875rem' }}>{addError}</p>}
-
-            {wishlists.length === 0 && !addError && (
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                No wishlists yet — <a href="/dashboard" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>create one first</a>.
+              <p className="modal-title">
+                {modalMode === 'write-in' ? '✏️ Write in a gift' : '+ Add to wishlist'}
               </p>
+              <button className="modal-close" onClick={closeModal}>✕</button>
+            </div>
+
+            {/* Product preview */}
+            {modalMode === 'product' && modalProduct && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--color-border)' }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 10, flexShrink: 0, fontSize: '1.5rem',
+                  background: CATEGORY_META[modalProduct.category]?.color || '#F3F4F6',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {modalProduct.icon}
+                </div>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-text)' }}>{modalProduct.name}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600 }}>${modalProduct.price?.toLocaleString()}</p>
+                </div>
+              </div>
             )}
 
-            <div className="modal-wishlist-list">
-              {wishlists.map((w) => (
-                <button
-                  key={w.id}
-                  className="modal-wishlist-btn"
-                  onClick={() => addToWishlist(w.id)}
-                  disabled={adding}
-                >
-                  <span>🎁 {w.title}</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{w.item_count} item{w.item_count !== 1 ? 's' : ''}</span>
-                </button>
-              ))}
-            </div>
+            {/* Write-in form */}
+            {modalMode === 'write-in' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--color-border)' }}>
+                <div>
+                  <label className="write-in-label">Gift name *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Instant Print Camera"
+                    value={writeInForm.name}
+                    onChange={(e) => setWriteInForm((f) => ({ ...f, name: e.target.value }))}
+                    style={{ fontSize: '0.875rem' }}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="write-in-label">
+                    Link <span style={{ fontWeight: 400 }}>(optional — paste to auto-fill)</span>
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type="url"
+                      className="form-input"
+                      placeholder="https://..."
+                      value={writeInForm.url}
+                      onChange={(e) => setWriteInForm((f) => ({ ...f, url: e.target.value }))}
+                      style={{ fontSize: '0.875rem', flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={scrapeUrl}
+                      disabled={scraping || !writeInForm.url.trim()}
+                      className="autofill-btn"
+                    >
+                      {scraping ? '…' : 'Auto-fill ↓'}
+                    </button>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <label className="write-in-label">Price <span style={{ fontWeight: 400 }}>(optional)</span></label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      value={writeInForm.price}
+                      onChange={(e) => setWriteInForm((f) => ({ ...f, price: e.target.value }))}
+                      style={{ fontSize: '0.875rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="write-in-label">Note <span style={{ fontWeight: 400 }}>(optional)</span></label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Any details…"
+                      value={writeInForm.description}
+                      onChange={(e) => setWriteInForm((f) => ({ ...f, description: e.target.value }))}
+                      style={{ fontSize: '0.875rem' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Status */}
+            {addSuccess && <p style={{ color: '#059669', fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.875rem' }}>✅ {addSuccess}</p>}
+            {addError   && <p style={{ color: '#EF4444', marginBottom: '0.5rem', fontSize: '0.875rem' }}>{addError}</p>}
+
+            {/* Wishlist checkboxes */}
+            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '0.4rem' }}>
+              Choose wishlists:
+            </p>
+
+            {wishlists.length === 0 && !addError ? (
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                No wishlists yet — <a href="/dashboard" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>create one first</a>.
+              </p>
+            ) : (
+              <div className="modal-wishlist-list">
+                {wishlists.map((w) => (
+                  <label key={w.id} className="modal-wishlist-check">
+                    <input
+                      type="checkbox"
+                      checked={selectedListIds.has(w.id)}
+                      onChange={() => toggleList(w.id)}
+                      style={{ accentColor: 'var(--color-primary)', width: 15, height: 15, flexShrink: 0, cursor: 'pointer' }}
+                    />
+                    <span style={{ flex: 1, fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>
+                      🎁 {w.title}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                      {w.item_count} item{w.item_count !== 1 ? 's' : ''}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* Confirm button */}
+            {wishlists.length > 0 && (
+              <button
+                onClick={addToSelectedLists}
+                disabled={!canSubmit || adding}
+                className={`modal-confirm-btn ${canSubmit ? 'active' : ''}`}
+              >
+                {adding
+                  ? 'Adding…'
+                  : selectedListIds.size === 0
+                    ? 'Select a wishlist'
+                    : `Add to ${selectedListIds.size} list${selectedListIds.size !== 1 ? 's' : ''}`
+                }
+              </button>
+            )}
+
           </div>
         </div>
       )}
