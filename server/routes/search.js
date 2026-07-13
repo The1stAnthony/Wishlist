@@ -63,6 +63,8 @@ router.get('/products', (req, res) => {
     // Shuffle on the unfiltered browse so every category appears evenly
     results = shuffle(ALL_PRODUCTS);
   }
+  // Static catalog — safe to cache in browser for 10 minutes
+  res.set('Cache-Control', 'public, max-age=600');
   res.json({ products: results, total: results.length });
 });
 
@@ -82,6 +84,7 @@ router.get('/', (req, res) => {
 
 // GET /api/search/categories
 router.get('/categories', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=3600'); // category list is static — cache 1 hour
   res.json({
     categories: CATEGORIES.map((cat) => ({
       ...cat,

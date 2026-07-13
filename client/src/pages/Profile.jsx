@@ -65,6 +65,8 @@ export default function Profile() {
   const [deleting,     setDeleting]     = useState(false);
   const [deleteError,  setDeleteError]  = useState('');
 
+  useEffect(() => { document.title = 'My Profile – All I Want'; }, []);
+
   useEffect(() => {
     if (user) {
       setForm({
@@ -244,6 +246,7 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
+                aria-label="Upload a new profile photo"
                 title="Upload a new photo"
                 style={{
                   position: 'absolute', bottom: 0, right: 0,
@@ -307,6 +310,7 @@ export default function Profile() {
                 className="form-input"
                 value={user?.email || ''}
                 disabled
+                aria-label="Email address (cannot be changed)"
                 style={{ opacity: 0.6, cursor: 'not-allowed' }}
                 title="Email cannot be changed"
               />

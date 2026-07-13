@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /wishlist/
+Disallow: /profile
+Disallow: /friends
+Disallow: /birthdays
+
+Sitemap: https://alliwant.xyz/sitemap.xml

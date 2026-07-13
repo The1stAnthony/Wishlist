@@ -83,6 +83,20 @@ function extractPrice(html) {
   return null;
 }
 
+// Block private / loopback hostnames to prevent SSRF
+function isPrivateHost(hostname) {
+  return (
+    /^localhost$/i.test(hostname) ||
+    /^127\./.test(hostname) ||
+    /^10\./.test(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+    /^169\.254\./.test(hostname) ||
+    /^::1$/.test(hostname) ||
+    /^0\.0\.0\.0$/.test(hostname)
+  );
+}
+
 // POST /api/scrape
 // Requires auth so we can't be used as an open proxy.
 router.post('/', requireAuth, async (req, res) => {
@@ -91,11 +105,12 @@ router.post('/', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'URL is required' });
   }
 
-  // Only allow http/https
+  // Only allow http/https; block private/loopback targets
   let parsed;
   try {
     parsed = new URL(url);
     if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+    if (isPrivateHost(parsed.hostname)) throw new Error();
   } catch {
     return res.status(400).json({ error: 'Invalid URL' });
   }

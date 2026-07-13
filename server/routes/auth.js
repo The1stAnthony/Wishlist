@@ -207,15 +207,23 @@ router.delete('/account', requireAuth, async (req, res) => {
   }
 
   try {
-    // Cascade deletes wishlists + items if DB has ON DELETE CASCADE.
-    // If not, delete in order to avoid FK violations.
+    // Delete in FK-safe order — child rows before parent
     await query(
-      `DELETE FROM wishlist_items
-       WHERE wishlist_id IN (SELECT id FROM wishlists WHERE user_id = $1)`,
+      `DELETE FROM wishlist_permissions WHERE wishlist_id IN (SELECT id FROM wishlists WHERE user_id = $1)`,
+      [req.user.id]
+    );
+    await query(
+      `DELETE FROM wishlist_permissions WHERE user_id = $1`,
+      [req.user.id]
+    );
+    await query(
+      `DELETE FROM wishlist_items WHERE wishlist_id IN (SELECT id FROM wishlists WHERE user_id = $1)`,
       [req.user.id]
     );
     await query('DELETE FROM wishlists WHERE user_id = $1', [req.user.id]);
     await query('DELETE FROM birthday_contacts WHERE user_id = $1', [req.user.id]);
+    await query('DELETE FROM follows WHERE follower_id = $1 OR followed_id = $1', [req.user.id]);
+    await query('DELETE FROM friendships WHERE requester_id = $1 OR addressee_id = $1', [req.user.id]);
     await query('DELETE FROM users WHERE id = $1', [req.user.id]);
 
     res.json({ ok: true });

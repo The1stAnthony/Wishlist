@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/pages/auth.css';
 
 export default function Login() {
   const { login }  = useAuth();
   const navigate   = useNavigate();
+  const location   = useLocation();
+
+  useEffect(() => { document.title = 'Sign In – All I Want'; }, []);
 
   const [form, setForm]             = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -23,7 +26,9 @@ export default function Login() {
 
     try {
       await login(form.email, form.password);
-      navigate('/dashboard');
+      const rawNext = new URLSearchParams(location.search).get('next') || '/dashboard';
+      const next = rawNext.startsWith('/') ? rawNext : '/dashboard'; // prevent open redirect
+      navigate(next);
     } catch (err) {
       setError(err.response?.data?.error || 'Something went wrong. Please try again.');
     } finally {

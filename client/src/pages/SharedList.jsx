@@ -46,7 +46,12 @@ export default function SharedList() {
 
   useEffect(() => {
     axios.get(`/api/wishlists/share/${token}`)
-      .then((res) => setData(res.data))
+      .then((res) => {
+        setData(res.data);
+        if (res.data?.wishlist?.title) {
+          document.title = `${res.data.wishlist.title} – All I Want`;
+        }
+      })
       .catch((err) => {
         if (err.response?.status === 403) {
           setRequiresAuth(!!err.response.data?.requiresAuth);

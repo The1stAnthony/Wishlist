@@ -62,6 +62,7 @@ export default function Wishlist() {
       axios.get('/api/friendships').catch(() => ({ data: { friends: [] } })),
     ]).then(([res, friendsRes]) => {
         const w = res.data.wishlist;
+        document.title = `${w.title} – All I Want`;
         setWishlist(w);
         setItems(res.data.items);
         setThemeUrl(w.theme_image_url || '');
@@ -409,6 +410,7 @@ export default function Wishlist() {
                 key={value}
                 type="button"
                 onClick={() => !disabled && handleVisibilityChange(value)}
+                aria-disabled={disabled ? 'true' : undefined}
                 title={disabled ? disabledTip : undefined}
                 style={{
                   padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)',

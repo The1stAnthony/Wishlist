@@ -95,6 +95,7 @@ export default function Friends() {
       .finally(() => setLoadingFriends(false));
   }, []);
 
+  useEffect(() => { document.title = 'Friends – All I Want'; }, []);
   useEffect(() => { loadFollowers(); loadFriends(); }, [loadFollowers, loadFriends]);
 
   // ── Follow actions ───────────────────────────────────────────────────────
@@ -286,7 +287,7 @@ export default function Friends() {
             </p>
             {inviteUrl ? (
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <input className="form-input" value={inviteUrl} readOnly style={{ fontSize: '0.75rem' }} />
+                <input className="form-input" value={inviteUrl} readOnly aria-label="Your invite link" style={{ fontSize: '0.75rem' }} />
                 <button
                   className="friends-btn friends-btn-follow-back"
                   style={{ flexShrink: 0 }}

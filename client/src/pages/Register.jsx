@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/pages/auth.css';
@@ -6,6 +6,8 @@ import '../styles/pages/auth.css';
 export default function Register() {
   const { register } = useAuth();
   const navigate     = useNavigate();
+
+  useEffect(() => { document.title = 'Create Account – All I Want'; }, []);
 
   const [form, setForm] = useState({
     name: '', display_name: '', email: '', password: '', confirmPassword: '', birthday: '',

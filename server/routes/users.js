@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/:handle', async (req, res) => {
   try {
     const creator = await queryOne(
-      `SELECT id, name, display_name, avatar_url, creator_mode, created_at,
+      `SELECT id, display_name, avatar_url, creator_mode, created_at,
               (SELECT COUNT(*) FROM follows WHERE followed_id = id)::int AS follower_count
        FROM users
        WHERE display_name = $1 AND creator_mode = TRUE`,
@@ -25,7 +25,7 @@ router.get('/:handle', async (req, res) => {
                WHERE wishlist_id = w.id AND image_url IS NOT NULL
                ORDER BY priority ASC, created_at ASC LIMIT 1) AS cover_image
        FROM wishlists w
-       WHERE w.user_id = $1 AND w.is_public = TRUE
+       WHERE w.user_id = $1 AND COALESCE(w.visibility, 'public') = 'public'
        ORDER BY w.created_at DESC`,
       [creator.id]
     );

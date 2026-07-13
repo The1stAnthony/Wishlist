@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import JsonLd from '../components/JsonLd';
@@ -58,15 +59,17 @@ const FAQ_SCHEMA = {
 export default function Home() {
   const { user } = useAuth();
 
+  useEffect(() => { document.title = 'All I Want – Birthday Wishlists & Gift Registry'; }, []);
+
   return (
     <>
       <JsonLd data={FAQ_SCHEMA} />
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section className="hero">
-        <span className="hero-decoration" style={{ top: '10%', left: '8%' }}>🎁</span>
-        <span className="hero-decoration" style={{ top: '20%', right: '10%' }}>🎂</span>
-        <span className="hero-decoration" style={{ bottom: '15%', left: '15%' }}>🎊</span>
-        <span className="hero-decoration" style={{ bottom: '20%', right: '8%' }}>🎈</span>
+        <span className="hero-decoration" style={{ top: '10%', left: '8%' }} aria-hidden="true">🎁</span>
+        <span className="hero-decoration" style={{ top: '20%', right: '10%' }} aria-hidden="true">🎂</span>
+        <span className="hero-decoration" style={{ bottom: '15%', left: '15%' }} aria-hidden="true">🎊</span>
+        <span className="hero-decoration" style={{ bottom: '20%', right: '8%' }} aria-hidden="true">🎈</span>
 
         <span className="hero-eyebrow">✨ Birthday wishlists, reimagined</span>
 

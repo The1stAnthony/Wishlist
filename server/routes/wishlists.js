@@ -36,10 +36,16 @@ router.post('/', requireAuth, async (req, res) => {
   if (!title) return res.status(400).json({ error: 'A title is required' });
 
   const shareToken = uuid().replace(/-/g, '').slice(0, 16);
-  const effectiveVisibility = visibility || 'public';
-  const effectiveIsPublic   = effectiveVisibility === 'public';
 
   try {
+    // Only creator accounts may have public wishlists — downgrade silently if not
+    let effectiveVisibility = visibility || 'friends';
+    if (effectiveVisibility === 'public') {
+      const me = await queryOne('SELECT creator_mode FROM users WHERE id = $1', [req.user.id]);
+      if (!me?.creator_mode) effectiveVisibility = 'friends';
+    }
+    const effectiveIsPublic = effectiveVisibility === 'public';
+
     const wishlist = await queryOne(
       `INSERT INTO wishlists
          (user_id, title, description, event_date, is_public, share_address, use_real_name, spoiler_free, visibility, share_token)
@@ -204,15 +210,23 @@ router.get('/:id', requireAuth, async (req, res) => {
 router.patch('/:id', requireAuth, async (req, res) => {
   const { title, description, event_date, is_public, share_address, use_real_name, spoiler_free, visibility, theme_image_url } = req.body;
 
-  const effectiveVisibility = visibility || (is_public === false ? 'friends' : 'public');
-  const effectiveIsPublic   = effectiveVisibility === 'public';
-
   try {
     const existing = await queryOne(
-      'SELECT id, theme_image_url FROM wishlists WHERE id = $1 AND user_id = $2',
+      `SELECT w.id, w.theme_image_url, w.visibility, u.creator_mode
+       FROM wishlists w
+       JOIN users u ON u.id = w.user_id
+       WHERE w.id = $1 AND w.user_id = $2`,
       [req.params.id, req.user.id]
     );
     if (!existing) return res.status(404).json({ error: 'Wishlist not found' });
+
+    // Enforce creator-mode requirement for public visibility
+    const effectiveVisibility = (() => {
+      const v = visibility || existing.visibility || 'friends';
+      if (v === 'public' && !existing.creator_mode) return existing.visibility || 'friends';
+      return v;
+    })();
+    const effectiveIsPublic = effectiveVisibility === 'public';
 
     const wishlist = await queryOne(
       `UPDATE wishlists
@@ -290,10 +304,12 @@ router.put('/:id/permissions', requireAuth, async (req, res) => {
     );
     if (!wishlist) return res.status(404).json({ error: 'Wishlist not found' });
     await query('DELETE FROM wishlist_permissions WHERE wishlist_id = $1', [req.params.id]);
-    for (const uid of (user_ids || [])) {
+    if (user_ids?.length) {
       await query(
-        'INSERT INTO wishlist_permissions (wishlist_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-        [req.params.id, uid]
+        `INSERT INTO wishlist_permissions (wishlist_id, user_id)
+         SELECT $1, unnest($2::bigint[])
+         ON CONFLICT DO NOTHING`,
+        [req.params.id, user_ids]
       );
     }
     res.json({ ok: true, count: user_ids?.length || 0 });

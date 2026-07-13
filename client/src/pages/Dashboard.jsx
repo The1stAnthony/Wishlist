@@ -149,6 +149,8 @@ export default function Dashboard() {
 
   const scrollRef = useRef(null);
 
+  useEffect(() => { document.title = 'Dashboard – All I Want'; }, []);
+
   useEffect(() => {
     const safe = (p, label) => p.catch((err) => {
       console.warn(`[Dashboard] ${label} failed:`, err?.response?.data?.error || err?.message);

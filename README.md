@@ -215,6 +215,10 @@ Feature history for reference — all of the below is live on `alliwant.xyz`:
 - [x] Privacy Policy
 - [x] Contact page (CONTACT_EMAIL env var — never hardcoded)
 
+**Auth & Account**
+- [x] Password change — current password required (in-app)
+- [x] Forgot password / reset via email token (1-hour expiry; dev fallback logs link to console if MAIL_HOST not configured)
+
 ---
 
 ## 🚧 Beta Roadmap — v0.1.0
@@ -228,29 +232,63 @@ A structured QA pass across all pages and user flows:
 - Edge cases: zero friends, zero wishlists, expired links, invalid tokens
 - Verify 403/404/500 error states surface cleanly to users
 
+**Fixed in pre-Beta sweep:**
+- ✅ Non-creator accounts could create `public` wishlists (server now downgrades to `friends` silently)
+- ✅ `DELETE /api/auth/account` now cleans up `follows`, `friendships`, and `wishlist_permissions` before deleting the user (was causing potential FK violation)
+- ✅ `PUT /:id/permissions` now uses a single batch `unnest` INSERT instead of N sequential INSERTs
+- ✅ `?next=` redirect after login now works — users sent to sign-in from a shared list land on that list, not the dashboard
+- ✅ `document.title` updates on every route (Home, Dashboard, Profile, Friends, Login, Register, Wishlist, SharedList) for screen readers and browser tabs
+
 ### 2. 🔐 Security Audit
-- Rate limiting on auth endpoints (login, register, invite claim)
+- **Rate limiting on auth endpoints** — `login`, `register`, `forgot-password`, `contact` have no rate limits. Vercel Hobby has no built-in rate limiting. Options: Upstash Redis + `@upstash/ratelimit`, Cloudflare in front of Vercel, or store failed-attempt counts in PostgreSQL. Not implementable without a Redis/KV store. **Add to post-Beta backlog.**
 - Input sanitization — confirm no XSS vectors in user-supplied content (names, descriptions, URLs)
-- JWT expiry enforcement — confirm 401 on expired tokens
-- Verify no PII leaks in API responses (e.g., email never returned to non-owner)
+- JWT expiry enforcement ✅ (handled in `requireAuth` — returns 401)
+- PII protection ✅ (email never returned to non-owner; real `name` removed from public creator profile API)
+- SSRF prevention ✅ (private IP ranges blocked in `/api/scrape`)
+- Body size limit ✅ (`express.json({ limit: '5mb' })`)
+- Public-wishlist creator enforcement ✅ (server now checks `creator_mode` before allowing `visibility='public'`)
 - Confirm Supabase RLS is either enabled or intentionally bypassed with full awareness
-- Review env var exposure — no secrets in client bundle
+- Review env var exposure — no secrets in client bundle ✅ (all secrets server-side only)
+- JWT in localStorage (known XSS risk for SPA — acceptable trade-off at this scale; sessionStorage or httpOnly cookies are the long-term fix)
 
 ### 3. ⚡ Performance Optimization
 - Add DB indexes on hot query paths (`follows.follower_id`, `friendships` status+requester, `wishlist_items.wishlist_id`)
 - Review N+1 subqueries in feed endpoints — consider materializing item counts
-- Lazy-load images (theme images, item photos stored as base64 — evaluate size impact)
+- **Image storage** — theme and item photos are stored as base64 TEXT in PostgreSQL. Each image adds 50–500KB to query payloads. For scale, migrate to Cloudinary or S3 pre-signed uploads and store URLs instead.
+- Static search/categories endpoint ✅ cache headers added (`Cache-Control: public, max-age=3600`)
+- Vite build handles JS/CSS minification and tree-shaking automatically ✅
 - Audit Vite bundle size — ensure no large unused dependencies
 
 ### 4. ♿ Accessibility & Compliance
 - WCAG 2.1 AA audit — keyboard navigation, focus states, color contrast
-- Add `aria-label` to all icon-only buttons
-- Ensure all form fields have associated `<label>` elements
-- Add `alt` text discipline to all images
+- `aria-label` on icon-only buttons ✅ (avatar upload ✏️, invite link readonly input, show/hide password, scroll arrows)
+- Form fields use `<label>` elements with `htmlFor` throughout ✅
+- `autoComplete` attributes on auth forms ✅
+- Decorative emoji spans marked `aria-hidden="true"` ✅
+- Disabled visibility buttons carry `aria-disabled` ✅
+- `document.title` updates on every route ✅ (screen readers announce meaningful page names)
+- Add `alt` text discipline to all images — theme/item images use wishlist title as alt; owner avatars use owner name ✅
+- `og-image.png` is missing — needs a 1200×630px branded image in `client/public/`
 - GDPR/CCPA: confirm Privacy Policy accurately describes data collected and stored
-- Cookie consent — currently no cookies beyond JWT in localStorage; document this clearly
+- Cookie consent — no cookies used; JWT is localStorage only. Document this in Privacy Policy.
 
-### 5. 🛒 Amazon Products — **Critical Blocker**
+### 5. 🔍 SEO Hardening
+**Context:** There is a clothing brand named "All I Want" with far more domain authority. We need to signal clearly to search engines that alliwant.xyz is a software app, not a store.
+
+**Done:**
+- ✅ `robots.txt` — tells crawlers to index public pages and exclude auth-only pages
+- ✅ `sitemap.xml` — static sitemap submitted to Google Search Console
+- ✅ `theme-color` meta tag for mobile browser chrome
+- ✅ Structured data: `FAQPage`, `SoftwareApplication`, `WebSite`, `Organization`, `ItemList` per page
+- ✅ Long-tail keywords updated in `<head>`
+
+**Still needed:**
+- Submit sitemap to Google Search Console: `alliwant.xyz/sitemap.xml`
+- Add `og:image` file — `client/public/og-image.png` (1200×630) needs to be created and deployed; currently referenced but missing
+- Consider adding a `/blog` or `/guides` page (e.g. "How to create a birthday wishlist") — content is the best long-term SEO against a larger brand
+- Verify shared wishlist pages (`/list/:token`) are indexed by Google — they contain unique `ItemList` structured data that can rank in gift-search results
+
+### 6. 🛒 Amazon Products — **Critical Blocker**
 The current Search page uses a curated static catalog with placeholder images and no direct product links. This is not suitable for Beta.
 
 **The problem:** The Amazon Product Advertising API (PA API) requires **3 qualifying sales** through your Associates account before access is granted. EU storefronts each require separate enrollment, and some (DE, FR, etc.) require additional qualifying purchase thresholds — effectively ~150 qualifying purchases across all 12 countries for full regional coverage.
@@ -267,7 +305,7 @@ The current Search page uses a curated static catalog with placeholder images an
 
 **Decision pending.** Likely path for Beta v0.1.0: narrow to US-only search using the static catalog (better curated), plus prompt US users to make purchases to earn PA API access. EU regional routing stays intact for user-added items regardless.
 
-### 6. ✅ Final Pre-Beta Review
+### 7. ✅ Final Pre-Beta Review
 - Replace Elfster for internal family use — full functional test with real users
 - Ensure all accounts can: add friends, create wishlists, share links, have gifts purchased
 - Verify email flows (if added before Beta)
@@ -277,16 +315,14 @@ The current Search page uses a curated static catalog with placeholder images an
 
 ## 📋 Deferred Backlog (Post-Beta)
 
+- [ ] **Rate limiting** — Upstash Redis + `@upstash/ratelimit` on login/register/forgot-password/contact; requires KV store (not available on Vercel Hobby without add-on)
 - [ ] **Email notifications** — birthday reminders, friend request alerts, purchase confirmations
-- [ ] **Password reset** — forgot password via email link
 - [ ] **Groups / gift pools** — multiple contributors toward one item
-- [ ] **Birthday calendar view** — month grid of all upcoming birthdays
 - [ ] **eCards** — send a digital birthday card through the app
 - [ ] **Gift card contributions** — chip in toward a list item monetarily
 - [ ] **Push notifications** (PWA) — opt-in birthday reminders on mobile
 - [ ] **Browser extension** — "Add to AllIWant" button on any product page
 - [ ] **AI gift suggestions** — describe the person, get curated ideas
-- [ ] **Docker Compose** — one-command local dev setup
 - [ ] **Test suite** — API route unit tests + key UI component tests
 - [ ] **CI/CD** — GitHub Actions lint + test on PRs
 
