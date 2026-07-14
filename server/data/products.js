@@ -222,11 +222,10 @@ function buildProducts() {
 
 const ALL_PRODUCTS = buildProducts();
 
-// Sort: admin products first, then Tier 1 (direct), then Tier 2 (handle)
+// Sort: Tier 1 (direct) before Tier 2 (handle). adminProduct has no effect on order —
+// the flag only tells the tower layer to always include it regardless of API state.
 function sortByTier(arr) {
   return [...arr].sort((a, b) => {
-    if (a.adminProduct && !b.adminProduct) return -1;
-    if (!a.adminProduct && b.adminProduct) return 1;
     if (a.source_type === 'direct' && b.source_type !== 'direct') return -1;
     if (a.source_type !== 'direct' && b.source_type === 'direct') return 1;
     return 0;
@@ -261,11 +260,10 @@ function getByCategory(cat) {
 }
 
 function getBrowseAll() {
-  // Shuffle Tier 2 for variety; pin admin + Tier 1 first
-  const admin  = ALL_PRODUCTS.filter((p) => p.adminProduct);
-  const direct = ALL_PRODUCTS.filter((p) => p.source_type === 'direct' && !p.adminProduct);
+  // Tier 1 first (in catalog order), then Tier 2 shuffled for variety
+  const direct = ALL_PRODUCTS.filter((p) => p.source_type === 'direct');
   const handle = shuffle(ALL_PRODUCTS.filter((p) => p.source_type === 'handle'));
-  return [...admin, ...direct, ...handle];
+  return [...direct, ...handle];
 }
 
 module.exports = { ALL_PRODUCTS, searchProducts, getByCategory, getBrowseAll };
