@@ -6,16 +6,16 @@ import AdBanner, { AD_SLOTS } from '../components/AdBanner';
 import '../styles/pages/search.css';
 
 const AMAZON_DOMAINS = {
-  US: 'amazon.com',   CA: 'amazon.ca',    GB: 'amazon.co.uk',
-  DE: 'amazon.de',    FR: 'amazon.fr',    IT: 'amazon.it',
-  ES: 'amazon.es',    NL: 'amazon.nl',    SE: 'amazon.se',
-  PL: 'amazon.pl',    AU: 'amazon.com.au',MX: 'amazon.com.mx',
+  US: 'www.amazon.com',    CA: 'www.amazon.ca',       GB: 'www.amazon.co.uk',
+  DE: 'www.amazon.de',     FR: 'www.amazon.fr',       IT: 'www.amazon.it',
+  ES: 'www.amazon.es',     NL: 'www.amazon.nl',       SE: 'www.amazon.se',
+  PL: 'www.amazon.pl',     AU: 'www.amazon.com.au',   MX: 'www.amazon.com.mx',
 };
 
 function regionalizeAmazonUrl(url, country) {
   if (!url || !country) return url;
   const domain = AMAZON_DOMAINS[country];
-  if (!domain || domain === 'amazon.com') return url;
+  if (!domain || domain === 'www.amazon.com') return url;
   try {
     const parsed = new URL(url);
     if (!parsed.hostname.includes('amazon.')) return url;
@@ -345,8 +345,14 @@ export default function Search() {
                 const meta = CATEGORY_META[p.category] || {};
                 return (
                   <div key={p.id} className="product-card">
-                    <div className="product-card-image" style={{ backgroundColor: meta.color || '#F3F4F6' }}>
-                      <span className="product-card-icon">{p.icon}</span>
+                    <div
+                      className="product-card-image"
+                      style={{ backgroundColor: p.image ? 'var(--color-surface)' : (meta.color || '#F3F4F6') }}
+                    >
+                      {p.image
+                        ? <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '0.5rem' }} />
+                        : <span className="product-card-icon">{p.icon}</span>
+                      }
                     </div>
                     <div className="product-card-body">
                       <p className="product-card-name">{p.name}</p>
@@ -379,9 +385,9 @@ export default function Search() {
               <a
                 href={(() => {
                   const country = user?.country || 'US';
-                  const domain  = AMAZON_DOMAINS[country] || 'amazon.com';
+                  const domain  = AMAZON_DOMAINS[country] || 'www.amazon.com';
                   const tag     = country === 'US' ? '&tag=alliwant0a-20' : '';
-                  return `https://www.${domain}/s?k=${encodeURIComponent(query || 'birthday gifts')}${tag}`;
+                  return `https://${domain}/s?k=${encodeURIComponent(query || 'birthday gifts')}${tag}`;
                 })()}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -447,10 +453,13 @@ export default function Search() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--color-border)' }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: 10, flexShrink: 0, fontSize: '1.5rem',
-                  background: CATEGORY_META[modalProduct.category]?.color || '#F3F4F6',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: modalProduct.image ? 'var(--color-surface)' : (CATEGORY_META[modalProduct.category]?.color || '#F3F4F6'),
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
                 }}>
-                  {modalProduct.icon}
+                  {modalProduct.image
+                    ? <img src={modalProduct.image} alt={modalProduct.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                    : modalProduct.icon
+                  }
                 </div>
                 <div>
                   <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-text)' }}>{modalProduct.name}</p>

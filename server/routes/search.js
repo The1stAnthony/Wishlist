@@ -1,5 +1,5 @@
 const express = require('express');
-const { searchProducts, getByCategory, ALL_PRODUCTS } = require('../data/products');
+const { searchProducts, getByCategory, getBrowseAll } = require('../data/products');
 
 const router = express.Router();
 
@@ -42,27 +42,17 @@ function injectAffiliateTag(url) {
   }
 }
 
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+// Named fallback — always available. Future tower layer calls this on any API error.
+function staticSearch(q, category) {
+  if (q?.trim())  return searchProducts(q);
+  if (category)   return getByCategory(category);
+  return getBrowseAll();
 }
 
 // GET /api/search/products?q=...&category=...
 router.get('/products', (req, res) => {
   const { q, category } = req.query;
-  let results;
-  if (q?.trim()) {
-    results = searchProducts(q);
-  } else if (category) {
-    results = getByCategory(category);
-  } else {
-    // Shuffle on the unfiltered browse so every category appears evenly
-    results = shuffle(ALL_PRODUCTS);
-  }
+  const results = staticSearch(q, category);
   // Static catalog — safe to cache in browser for 10 minutes
   res.set('Cache-Control', 'public, max-age=600');
   res.json({ products: results, total: results.length });

@@ -7,16 +7,16 @@ import JsonLd from '../components/JsonLd';
 import { useAuth } from '../context/AuthContext';
 
 const AMAZON_DOMAINS = {
-  US: 'amazon.com',   CA: 'amazon.ca',    GB: 'amazon.co.uk',
-  DE: 'amazon.de',    FR: 'amazon.fr',    IT: 'amazon.it',
-  ES: 'amazon.es',    NL: 'amazon.nl',    SE: 'amazon.se',
-  PL: 'amazon.pl',    AU: 'amazon.com.au',MX: 'amazon.com.mx',
+  US: 'www.amazon.com',    CA: 'www.amazon.ca',       GB: 'www.amazon.co.uk',
+  DE: 'www.amazon.de',     FR: 'www.amazon.fr',       IT: 'www.amazon.it',
+  ES: 'www.amazon.es',     NL: 'www.amazon.nl',       SE: 'www.amazon.se',
+  PL: 'www.amazon.pl',     AU: 'www.amazon.com.au',   MX: 'www.amazon.com.mx',
 };
 
 function regionalizeAmazonUrl(url, country) {
   if (!url || !country) return url;
   const domain = AMAZON_DOMAINS[country];
-  if (!domain || domain === 'amazon.com') return url;
+  if (!domain || domain === 'www.amazon.com') return url;
   try {
     const parsed = new URL(url);
     if (!parsed.hostname.includes('amazon.')) return url;
