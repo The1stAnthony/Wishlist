@@ -260,8 +260,9 @@ function getByCategory(cat) {
 }
 
 function getBrowseAll() {
-  // Tier 1 first (in catalog order), then Tier 2 shuffled for variety
-  const direct = ALL_PRODUCTS.filter((p) => p.source_type === 'direct');
+  // Both tiers shuffled so the initial load feels natural, not ordered by category.
+  // getByCategory() preserves catalog order for per-category views.
+  const direct = shuffle(ALL_PRODUCTS.filter((p) => p.source_type === 'direct'));
   const handle = shuffle(ALL_PRODUCTS.filter((p) => p.source_type === 'handle'));
   return [...direct, ...handle];
 }

@@ -18,12 +18,12 @@
 
 .alpha-badge {
   @apply inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ml-1.5;
-  background-color: #FEF3C7;
-  color: #92400E;
+  background-color: #DBEAFE;
+  color: #1D4ED8;
   font-size: 0.6rem;
   letter-spacing: 0.05em;
   vertical-align: middle;
-  border: 1px solid #FCD34D;
+  border: 1px solid #93C5FD;
 }
 
 .navbar-nav {
