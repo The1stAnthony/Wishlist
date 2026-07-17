@@ -122,13 +122,15 @@ router.get('/share/:token', async (req, res) => {
     );
 
     const owner = {
-      id:         ownerRow.id,
+      id:           ownerRow.id,
       // Public wishlists show alias; friends/specific show real name
-      shown_name: wishlist.visibility === 'public'
-                    ? (ownerRow.display_name || ownerRow.name)
-                    : ownerRow.name,
-      avatar_url: ownerRow.avatar_url,
-      country:    ownerRow.country || 'US',
+      shown_name:   wishlist.visibility === 'public'
+                      ? (ownerRow.display_name || ownerRow.name)
+                      : ownerRow.name,
+      // Expose display_name (handle) for public lists so the gifter can follow inline
+      display_name: wishlist.visibility === 'public' ? ownerRow.display_name : null,
+      avatar_url:   ownerRow.avatar_url,
+      country:      ownerRow.country || 'US',
       ...(wishlist.share_address && {
         street_address: ownerRow.street_address,
         city:           ownerRow.city,
@@ -446,12 +448,44 @@ router.post('/items/:itemId/purchase', requireAuth, async (req, res) => {
 
   try {
     const item = await queryOne(
-      `SELECT i.*, w.is_public FROM wishlist_items i
+      `SELECT i.*, w.user_id AS wishlist_owner_id, w.visibility, w.is_public
+       FROM wishlist_items i
        JOIN wishlists w ON w.id = i.wishlist_id
        WHERE i.id = $1`,
       [req.params.itemId]
     );
     if (!item) return res.status(404).json({ error: 'Item not found' });
+
+    // Enforce same access rules as the GET /share/:token route.
+    // Owner can always purchase their own items (e.g. self-buy test).
+    const viewerId = req.user.id;
+    const ownerId  = item.wishlist_owner_id;
+    const visibility = item.visibility || (item.is_public ? 'public' : 'friends');
+
+    if (viewerId !== ownerId) {
+      if (visibility === 'friends') {
+        const friendship = await queryOne(
+          `SELECT id FROM friendships
+           WHERE ((requester_id = $1 AND addressee_id = $2) OR (requester_id = $2 AND addressee_id = $1))
+             AND status = 'accepted'`,
+          [viewerId, ownerId]
+        );
+        if (!friendship) return res.status(403).json({ error: 'You must be friends to purchase from this wishlist' });
+      } else if (visibility === 'specific') {
+        const permitted = await queryOne(
+          'SELECT 1 FROM wishlist_permissions WHERE wishlist_id = $1 AND user_id = $2',
+          [item.wishlist_id, viewerId]
+        );
+        if (!permitted) return res.status(403).json({ error: 'You do not have access to this wishlist' });
+      }
+      } else if (visibility === 'public') {
+        // Public creator wishlists — must be a follower to prevent random abuse
+        const follow = await queryOne(
+          'SELECT 1 FROM follows WHERE follower_id = $1 AND followed_id = $2',
+          [viewerId, ownerId]
+        );
+        if (!follow) return res.status(403).json({ error: 'You must follow this creator to mark gifts as bought' });
+    }
 
     const remaining = (item.quantity || 1) - (item.purchased_count || 0);
     if (remaining <= 0) return res.status(409).json({ error: 'This item is already fully purchased' });

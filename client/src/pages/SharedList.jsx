@@ -43,16 +43,25 @@ export default function SharedList() {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState('');
   const [requiresAuth, setRequiresAuth] = useState(false);
+  const [isFollowing,  setIsFollowing]  = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     axios.get(`/api/wishlists/share/${token}`)
-      .then((res) => {
+      .then(async (res) => {
         setData(res.data);
         const { wishlist, owner, items } = res.data;
         if (wishlist?.title) {
           document.title = `${wishlist.title} – ${owner?.shown_name}'s Wishlist | All I Want`;
           const desc = document.querySelector('meta[name="description"]');
           if (desc) desc.setAttribute('content', `Shop ${wishlist.title} — ${owner?.shown_name}'s gift wishlist on All I Want. ${items?.length || 0} gift ideas for every budget. No duplicates, no spoilers.`);
+        }
+        // For public creator wishlists, check if the viewer is a follower
+        if (wishlist?.visibility === 'public' && owner?.display_name && user) {
+          try {
+            const followRes = await axios.get(`/api/users/${owner.display_name}/follow-status`);
+            setIsFollowing(followRes.data.following);
+          } catch { /* treat as not following */ }
         }
       })
       .catch((err) => {
@@ -66,7 +75,20 @@ export default function SharedList() {
         }
       })
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, user]);
+
+  async function handleFollow() {
+    if (!user || !data?.owner?.display_name) return;
+    setFollowLoading(true);
+    try {
+      await axios.post(`/api/follows/${data.owner.display_name}`);
+      setIsFollowing(true);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Could not follow creator.');
+    } finally {
+      setFollowLoading(false);
+    }
+  }
 
   async function handlePurchase(itemId, qty = 1) {
     try {
@@ -122,6 +144,13 @@ export default function SharedList() {
 
   const unpurchased = items.filter((i) => (i.purchased_count || 0) < (i.quantity || 1)).map(regionalize);
   const purchased   = items.filter((i) => (i.purchased_count || 0) >= (i.quantity || 1)).map(regionalize);
+
+  // "Mark bought" requires: logged in, AND (list is non-public OR viewer follows the creator OR viewer IS the owner)
+  const canMarkBought = !!user && (
+    wishlist.visibility !== 'public' ||
+    isFollowing ||
+    user.id === owner.id
+  );
 
   const listSchema = {
     '@context': 'https://schema.org',
@@ -222,6 +251,33 @@ export default function SharedList() {
           </div>
         )}
 
+        {/* ── Follow-to-unlock banner (public creator wishlists only) ─────── */}
+        {wishlist.visibility === 'public' && user && !isFollowing && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.875rem',
+            padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)',
+            background: '#FEF3C7', border: '1px solid #FCD34D', marginBottom: '1.5rem',
+          }}>
+            <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>⭐</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontWeight: 700, fontSize: '0.875rem', color: '#92400E', marginBottom: '0.2rem' }}>
+                Follow {owner.shown_name} to mark gifts as bought
+              </p>
+              <p style={{ fontSize: '0.8rem', color: '#B45309' }}>
+                Following keeps their list coordinated — no duplicate gifts!
+              </p>
+            </div>
+            <button
+              className="btn-primary"
+              style={{ flexShrink: 0, fontSize: '0.8rem', padding: '0.5rem 1rem' }}
+              onClick={handleFollow}
+              disabled={followLoading}
+            >
+              {followLoading ? '…' : `Follow`}
+            </button>
+          </div>
+        )}
+
         {/* ── Gifter tip ───────────────────────────────────────────────────── */}
         <div style={{
           background: 'linear-gradient(135deg, #EDE9FE, #FAF9FF)',
@@ -248,7 +304,7 @@ export default function SharedList() {
         {unpurchased.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             {unpurchased.map((item) => (
-              <GiftCard key={item.id} item={item} onPurchase={handlePurchase} showPurchase />
+              <GiftCard key={item.id} item={item} onPurchase={handlePurchase} showPurchase={canMarkBought} />
             ))}
           </div>
         )}
