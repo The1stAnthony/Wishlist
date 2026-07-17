@@ -4,7 +4,7 @@
 
 **AllIWant** is a birthday registry platform built to solve a problem everyone has: the people who love you don't know what to get you, and you end up with stuff you don't want. AllIWant lets you build a wishlist, share a single link, and let your people shop with confidence — no more guessing, no more duplicate gifts.
 
-🌐 **Live at [alliwant.xyz](https://alliwant.xyz)** · Currently in **Alpha**
+🌐 **Live at [alliwant.xyz](https://alliwant.xyz)** · Currently in **Beta**
 
 ---
 
@@ -17,7 +17,7 @@ Most wishlist apps are clunky, require gifters to sign up, or are buried inside 
 - **Duplicate-gift proof** — gifters mark items purchased so no one buys the same thing twice
 - **Privacy by visibility tier** — Public (creator alias), Friends (real name), Specific People (hand-picked)
 - **Creator-first discovery** — creator accounts get one-way follows; friends use mutual acceptance
-- **Regional Amazon links** — automatically routes gifters to their local Amazon store (12 countries)
+- **Regional Amazon links** — automatically routes gifters to their local Amazon store (18 countries, 11 regional Associates store IDs)
 
 ---
 
@@ -32,7 +32,7 @@ Most wishlist apps are clunky, require gifters to sign up, or are buried inside 
 | Auth | JWT (7-day tokens, localStorage) |
 | Deployment | Vercel (Hobby — all routes via `api/index.js`) |
 | Analytics | Google Analytics 4 (`G-RH39HL6QV9`) |
-| Affiliate | Amazon Associates (US tag; regional routing for 12 countries) |
+| Affiliate | Amazon Associates (11 regional store IDs; 18-country routing with ASIN canonicalization) |
 | Ads | Google AdSense (`ca-pub-5976607298154940`) |
 
 ---
@@ -194,12 +194,14 @@ Feature history for reference — all of the below is live on `alliwant.xyz`:
 - [x] "Write in a gift" collapsible form — items visible first
 - [x] Item photo upload (client-side compressed to 600×600)
 - [x] Address sharing toggle per-list
+- [x] Creator Shipping Address — separate PO Box / business address for public wishlists; private address still used for friends/specific tiers; country shared between both
+- [x] Wishlist Preview Mode — owner can preview their shared list exactly as visitors see it; sticky "Preview Mode" banner with Exit button; mark-as-bought suppressed; purchased section hidden with spoiler-safe count
 - [x] Share link with toast copy confirmation
 
 **Discovery & Search**
 - [x] Gift search with category browse (8 categories)
-- [x] Regional Amazon links — 12 Western countries; routes owners and gifters to local store
-- [x] Amazon affiliate tag injection (US only; stripped for non-US per Associates policy)
+- [x] Regional Amazon links — 18 countries; correct domain routing (IE→UK, AT/CH/DK/NO/FI→DE, PT→ES, BE own store)
+- [x] Amazon affiliate tag injection — all 11 regional store IDs; ASIN-extracted canonical `/dp/{ASIN}/?tag=` URLs; handles missing protocol, missing `www.`, missing trailing slash, and long messy URLs
 - [x] "Search all of Amazon" fallback CTA (region-aware)
 
 **Infrastructure**
@@ -343,7 +345,8 @@ A structured QA pass across all pages and user flows:
 - [ ] `/birthdays` page currently has deprecated/unused functionality; repurpose or replace with `/events`
 
 **Discovery & Search**
-- [ ] **PA API upgrade** — once 3 qualifying sales are reached, replace manual Tier 1 curated products with live Amazon PA API results per region; EU storefronts require separate enrollment
+- [ ] **Creators API upgrade** — once 10 aggregate qualifying sales / 30-day window maintained, swap static catalog for live Creators API results (replaced PA-API v5, retired May 2026). Auth: OAuth 2.0 Bearer. Env vars needed: `CREATORS_API_CLIENT_ID` + `CREATORS_API_CLIENT_SECRET`.
+  - [x] EU & regional storefronts enrolled — 11 store IDs live across US, CA, UK, DE, FR, IT, ES, NL, BE, SE, PL
 - [ ] **Price filter on `/search`** — let users sort/filter catalog by price range
 - [ ] **Browser extension** — "Add to AllIWant" button on any product page (best long-term alternative to PA API)
 - [ ] **AI gift suggestions** — describe the person, get curated ideas
