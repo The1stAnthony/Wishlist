@@ -40,33 +40,40 @@ export default function Wishlist() {
 
   const { showToast } = useToast();
 
-  const [wishlist,    setWishlist]    = useState(null);
-  const [items,       setItems]       = useState([]);
-  const [form,        setForm]        = useState(EMPTY_FORM);
-  const [loading,     setLoading]     = useState(true);
-  const [saving,      setSaving]      = useState(false);
-  const [error,       setError]       = useState('');
-  const [enriching,   setEnriching]   = useState(false);
-  const [enrichHint,  setEnrichHint]  = useState('');
-  const [editingDate, setEditingDate] = useState(false);
-  const [dateValue,   setDateValue]   = useState('');
-  const [friends,     setFriends]     = useState([]);
-  const [permittedIds, setPermittedIds] = useState(new Set());
-  const [themeUrl,    setThemeUrl]    = useState('');
-  const [savingTheme, setSavingTheme] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [wishlist,      setWishlist]      = useState(null);
+  const [items,         setItems]         = useState([]);
+  const [form,          setForm]          = useState(EMPTY_FORM);
+  const [addLinkedLists, setAddLinkedLists] = useState(new Set());
+  const [loading,       setLoading]       = useState(true);
+  const [saving,        setSaving]        = useState(false);
+  const [error,         setError]         = useState('');
+  const [enriching,     setEnriching]     = useState(false);
+  const [enrichHint,    setEnrichHint]    = useState('');
+  const [editingDate,   setEditingDate]   = useState(false);
+  const [dateValue,     setDateValue]     = useState('');
+  const [friends,       setFriends]       = useState([]);
+  const [permittedIds,  setPermittedIds]  = useState(new Set());
+  const [themeUrl,      setThemeUrl]      = useState('');
+  const [savingTheme,   setSavingTheme]   = useState(false);
+  const [showAddForm,   setShowAddForm]   = useState(false);
+  const [myWishlists,   setMyWishlists]   = useState([]);
 
   useEffect(() => {
     Promise.all([
       axios.get(`/api/wishlists/${id}`),
       axios.get('/api/friendships').catch(() => ({ data: { friends: [] } })),
-    ]).then(([res, friendsRes]) => {
+      axios.get('/api/wishlists/my').catch(() => ({ data: { wishlists: [] } })),
+    ]).then(([res, friendsRes, myRes]) => {
         const w = res.data.wishlist;
         document.title = `${w.title} – All I Want`;
         setWishlist(w);
         setItems(res.data.items);
         setThemeUrl(w.theme_image_url || '');
         setFriends(friendsRes.data.friends || []);
+        // Other wishlists the owner can cross-link items to
+        setMyWishlists(
+          (myRes.data.wishlists || []).filter((wl) => String(wl.id) !== String(id))
+        );
         if (w.visibility === 'specific') {
           axios.get(`/api/wishlists/${id}/permissions`)
             .then((r) => setPermittedIds(new Set((r.data.permitted || []).map((u) => u.id))))
@@ -136,6 +143,15 @@ export default function Wishlist() {
       const res = await axios.post(`/api/wishlists/${id}/items`, payload);
       setItems((prev) => [...prev, res.data.item]);
       setForm(EMPTY_FORM);
+
+      // Copy to additionally linked wishlists
+      for (const wId of addLinkedLists) {
+        try { await axios.post(`/api/wishlists/${wId}/items`, payload); } catch { /* silent */ }
+      }
+      if (addLinkedLists.size > 0) {
+        showToast(`✅ Added to this list and ${addLinkedLists.size} other${addLinkedLists.size > 1 ? 's' : ''}!`);
+      }
+      setAddLinkedLists(new Set());
     } catch {
       setError('Could not add item. Please try again.');
     } finally {
@@ -149,6 +165,33 @@ export default function Wishlist() {
       setItems((prev) => prev.filter((i) => i.id !== itemId));
     } catch {
       setError('Could not delete item.');
+    }
+  }
+
+  async function handleEditItem(itemId, updatedData, linkedIds = []) {
+    try {
+      // Re-tag Amazon links
+      let affiliateUrl = updatedData.url || '';
+      if (updatedData.url?.includes('amazon.com')) {
+        try {
+          const tagRes = await axios.post('/api/search/tag-url', { url: updatedData.url });
+          affiliateUrl = tagRes.data.affiliate_url;
+        } catch { /* use plain URL */ }
+      }
+
+      const payload = { ...updatedData, affiliate_url: affiliateUrl || updatedData.url || '' };
+      const res = await axios.patch(`/api/wishlists/items/${itemId}`, payload);
+      setItems((prev) => prev.map((i) => i.id === itemId ? { ...i, ...res.data.item } : i));
+
+      // Copy to any additionally linked wishlists
+      for (const wId of linkedIds) {
+        try { await axios.post(`/api/wishlists/${wId}/items`, payload); } catch { /* silent */ }
+      }
+
+      const extra = linkedIds.length > 0 ? ` and added to ${linkedIds.length} other list${linkedIds.length > 1 ? 's' : ''}` : '';
+      showToast(`✅ Item updated${extra}!`);
+    } catch {
+      setError('Could not update item.');
     }
   }
 
@@ -637,8 +680,10 @@ export default function Wishlist() {
                 key={item.id}
                 item={regionalize(item)}
                 onDelete={handleDeleteItem}
+                onEdit={handleEditItem}
                 spoilerFree={Boolean(wishlist?.spoiler_free)}
                 onSelfPurchase={!wishlist?.spoiler_free ? handleSelfPurchase : undefined}
+                myWishlists={myWishlists}
               />
             ))}
           </div>
@@ -806,6 +851,30 @@ export default function Wishlist() {
                 </div>
               </div>
             </div>
+
+            {/* Cross-list linking — only shown when user has other wishlists */}
+            {myWishlists.length > 0 && (
+              <div className="full-width" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.875rem' }}>
+                <label className="form-label">Also add to your other wishlists</label>
+                <div className="wishlist-item-link-list">
+                  {myWishlists.map((w) => (
+                    <label key={w.id}>
+                      <input
+                        type="checkbox"
+                        checked={addLinkedLists.has(w.id)}
+                        onChange={() => setAddLinkedLists((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(w.id)) next.delete(w.id); else next.add(w.id);
+                          return next;
+                        })}
+                        style={{ accentColor: 'var(--color-primary)', width: 14, height: 14 }}
+                      />
+                      {w.title}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button type="submit" className="btn-primary" style={{ marginTop: '1rem' }} disabled={saving}>
               {saving ? 'Adding…' : 'Add to wishlist'}

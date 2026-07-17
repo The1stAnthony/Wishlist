@@ -1,12 +1,23 @@
-.wishlist-item {
-  @apply flex items-start gap-4 p-4 rounded-xl transition-all;
-  background-color: var(--color-surface);
+/* Wrapper groups the card + the edit panel beneath it */
+.wishlist-item-wrapper {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-xl);
   border: 1px solid var(--color-border);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.wishlist-item:hover {
+.wishlist-item-wrapper:hover {
   border-color: var(--color-primary-light);
   box-shadow: var(--shadow-card);
+}
+
+.wishlist-item {
+  @apply flex items-start gap-4 p-4 transition-all;
+  background-color: var(--color-surface);
+  /* remove individual border — wrapper owns it */
+  border: none;
 }
 
 .wishlist-item-thumb {
@@ -21,11 +32,13 @@
 
 .wishlist-item-info {
   @apply flex-1 min-w-0;
+  overflow: hidden;
 }
 
 .wishlist-item-name {
   @apply text-sm font-semibold truncate;
   color: var(--color-text);
+  max-width: 100%;
 }
 
 .wishlist-item-desc {
@@ -34,7 +47,7 @@
 }
 
 .wishlist-item-meta {
-  @apply flex items-center gap-3 mt-2;
+  @apply flex items-center gap-2 mt-2 flex-wrap;
 }
 
 .wishlist-item-price {
@@ -67,12 +80,15 @@
 }
 
 /* When the gifter has marked this as purchased */
-.wishlist-item.is-purchased {
-  background-color: #F0FDF4;
+.wishlist-item-wrapper.is-purchased {
   border-color: #86EFAC;
 }
 
-.wishlist-item.is-purchased .wishlist-item-name {
+.wishlist-item.is-purchased {
+  background-color: #F0FDF4;
+}
+
+.wishlist-item-wrapper.is-purchased .wishlist-item-name {
   text-decoration: line-through;
   color: var(--color-text-muted);
 }
@@ -115,4 +131,53 @@
 .wishlist-item-self-buy:hover {
   background-color: #A7F3D0;
   border-color: #34D399;
+}
+
+/* ── Edit button ──────────────────────────────────────────────────────────── */
+.wishlist-item-edit-btn {
+  @apply p-1.5 rounded-lg transition-all;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.wishlist-item-edit-btn:hover {
+  background-color: #EDE9FE;
+  color: var(--color-primary);
+}
+
+.wishlist-item-edit-btn.is-active {
+  background-color: #EDE9FE;
+  color: var(--color-primary);
+}
+
+/* ── Edit panel (accordion below the card) ───────────────────────────────── */
+.wishlist-item-edit-panel {
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-background);
+}
+
+.wishlist-item-edit-panel .form-label {
+  font-size: 0.75rem;
+}
+
+.wishlist-item-edit-panel .form-input {
+  font-size: 0.82rem;
+  padding: 0.4rem 0.625rem;
+}
+
+.wishlist-item-link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.wishlist-item-link-list label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: var(--color-text);
 }

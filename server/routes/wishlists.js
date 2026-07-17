@@ -391,7 +391,7 @@ router.post('/:id/items', requireAuth, async (req, res) => {
 // ── PATCH /api/wishlists/items/:itemId ─────────────────────────────────────
 
 router.patch('/items/:itemId', requireAuth, async (req, res) => {
-  const { name, description, price, url, affiliate_url, image_url, priority } = req.body;
+  const { name, description, price, url, affiliate_url, image_url, priority, quantity } = req.body;
 
   try {
     // Confirm ownership via join
@@ -406,11 +406,12 @@ router.patch('/items/:itemId', requireAuth, async (req, res) => {
     const item = await queryOne(
       `UPDATE wishlist_items
        SET name = $1, description = $2, price = $3, url = $4,
-           affiliate_url = $5, image_url = $6, priority = $7
-       WHERE id = $8
+           affiliate_url = $5, image_url = $6, priority = $7, quantity = $8
+       WHERE id = $9
        RETURNING *`,
       [name, description || null, price || null, url || null,
-       affiliate_url || null, image_url || null, priority || 2, req.params.itemId]
+       affiliate_url || null, image_url || null, priority || 2,
+       Math.max(1, parseInt(quantity) || 1), req.params.itemId]
     );
     res.json({ item });
   } catch (err) {
