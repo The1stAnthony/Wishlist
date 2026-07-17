@@ -14,27 +14,30 @@ const CATEGORIES = [
   { id: 'food',       label: 'Food & Drink',       icon: '🍫', terms: ['chocolate box', 'wine gift set', 'gourmet popcorn', 'tea collection'] },
 ];
 
-// Returns the approved affiliate tag, or null if not yet set.
-// Links work either way — we just don't earn commission until approved.
-function getTag() {
-  const tag = process.env.AMAZON_AFFILIATE_TAG;
-  if (!tag || tag.includes('your-real-tag')) return null;
-  return tag;
-}
+const AFFILIATE_TAGS = {
+  'www.amazon.com':    'alliwant0a-20',
+  'www.amazon.ca':     'alliwant0e-20',
+  'www.amazon.co.uk':  'alliwant0c-21',
+  'www.amazon.de':     'alliwant06-21',
+  'www.amazon.fr':     'alliwant08-21',
+  'www.amazon.it':     'alliwant04-21',
+  'www.amazon.es':     'alliwant01-21',
+  'www.amazon.nl':     'alliwant031-21',
+  'www.amazon.com.be': 'alliwant0f1-21',
+  'www.amazon.se':     'alliwant09-21',
+  'www.amazon.pl':     'alliwant054-21',
+};
 
 function buildAmazonUrl(term) {
   const encodedTerm = encodeURIComponent(term.trim());
-  const tag = getTag();
-  const tagParam = tag ? `&tag=${tag}` : '';
-  return `https://www.amazon.com/s?k=${encodedTerm}${tagParam}`;
+  return `https://www.amazon.com/s?k=${encodedTerm}&tag=alliwant0a-20`;
 }
 
 function injectAffiliateTag(url) {
-  const tag = getTag();
   try {
     const parsed = new URL(url);
-    if (!parsed.hostname.includes('amazon.com')) return url;
-    // Only inject the tag when we have an approved one
+    if (!parsed.hostname.includes('amazon.')) return url;
+    const tag = AFFILIATE_TAGS[parsed.hostname];
     if (tag) parsed.searchParams.set('tag', tag);
     return parsed.toString();
   } catch {

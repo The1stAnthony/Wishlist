@@ -8,21 +8,54 @@ import WishlistItem from '../components/WishlistItem';
 import '../styles/pages/wishlist.css';
 
 const AMAZON_DOMAINS = {
-  US: 'www.amazon.com',    CA: 'www.amazon.ca',       GB: 'www.amazon.co.uk',
-  DE: 'www.amazon.de',     FR: 'www.amazon.fr',       IT: 'www.amazon.it',
-  ES: 'www.amazon.es',     NL: 'www.amazon.nl',       SE: 'www.amazon.se',
-  PL: 'www.amazon.pl',     AU: 'www.amazon.com.au',   MX: 'www.amazon.com.mx',
+  US: 'www.amazon.com',
+  CA: 'www.amazon.ca',
+  GB: 'www.amazon.co.uk',
+  IE: 'www.amazon.co.uk',
+  DE: 'www.amazon.de',
+  AT: 'www.amazon.de',
+  CH: 'www.amazon.de',
+  DK: 'www.amazon.de',
+  NO: 'www.amazon.de',
+  FI: 'www.amazon.de',
+  FR: 'www.amazon.fr',
+  IT: 'www.amazon.it',
+  ES: 'www.amazon.es',
+  PT: 'www.amazon.es',
+  NL: 'www.amazon.nl',
+  BE: 'www.amazon.com.be',
+  SE: 'www.amazon.se',
+  PL: 'www.amazon.pl',
+};
+
+const AFFILIATE_TAGS = {
+  'www.amazon.com':    'alliwant0a-20',
+  'www.amazon.ca':     'alliwant0e-20',
+  'www.amazon.co.uk':  'alliwant0c-21',
+  'www.amazon.de':     'alliwant06-21',
+  'www.amazon.fr':     'alliwant08-21',
+  'www.amazon.it':     'alliwant04-21',
+  'www.amazon.es':     'alliwant01-21',
+  'www.amazon.nl':     'alliwant031-21',
+  'www.amazon.com.be': 'alliwant0f1-21',
+  'www.amazon.se':     'alliwant09-21',
+  'www.amazon.pl':     'alliwant054-21',
 };
 
 function regionalizeAmazonUrl(url, country) {
   if (!url || !country) return url;
   const domain = AMAZON_DOMAINS[country];
-  if (!domain || domain === 'www.amazon.com') return url;
+  if (!domain) return url;
   try {
     const parsed = new URL(url);
     if (!parsed.hostname.includes('amazon.')) return url;
     parsed.hostname = domain;
-    parsed.searchParams.delete('tag');
+    const tag = AFFILIATE_TAGS[domain];
+    if (tag) {
+      parsed.searchParams.set('tag', tag);
+    } else {
+      parsed.searchParams.delete('tag');
+    }
     return parsed.toString();
   } catch {
     return url;
@@ -127,7 +160,7 @@ export default function Wishlist() {
     try {
       // if the URL is an Amazon link, ask the server to tag it with our affiliate ID
       let affiliateUrl = '';
-      if (form.url && form.url.includes('amazon.com')) {
+      if (form.url && form.url.includes('amazon.')) {
         const tagRes = await axios.post('/api/search/tag-url', { url: form.url });
         affiliateUrl = tagRes.data.affiliate_url;
       }
@@ -173,7 +206,7 @@ export default function Wishlist() {
     try {
       // Re-tag Amazon links
       let affiliateUrl = updatedData.url || '';
-      if (updatedData.url?.includes('amazon.com')) {
+      if (updatedData.url?.includes('amazon.')) {
         try {
           const tagRes = await axios.post('/api/search/tag-url', { url: updatedData.url });
           affiliateUrl = tagRes.data.affiliate_url;
