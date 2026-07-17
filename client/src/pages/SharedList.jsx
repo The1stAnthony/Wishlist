@@ -43,15 +43,34 @@ const AFFILIATE_TAGS = {
   'www.amazon.pl':     'alliwant054-21',
 };
 
-function regionalizeAmazonUrl(url, country) {
-  if (!url || !country) return url;
+const ASIN_RE = /\/(?:dp|gp\/product|product)\/([A-Z0-9]{10})(?:\/|$|\?|#)/i;
+
+function regionalizeAmazonUrl(rawUrl, country) {
+  if (!rawUrl || !country) return rawUrl;
   const domain = AMAZON_DOMAINS[country];
-  if (!domain) return url;
+  if (!domain) return rawUrl;
   try {
+    // Normalize: add protocol and www. if missing, upgrade http → https
+    let url = rawUrl.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+    url = url.replace(/^http:\/\//, 'https://');
+    url = url.replace(/^(https:\/\/)(?!www\.)(amazon\.)/, '$1www.$2');
+
     const parsed = new URL(url);
-    if (!parsed.hostname.includes('amazon.')) return url;
-    parsed.hostname = domain;
+    if (!parsed.hostname.includes('amazon.')) return rawUrl;
+
     const tag = AFFILIATE_TAGS[domain];
+
+    // Extract ASIN → build canonical /dp/{ASIN}/?tag= URL on the target domain
+    const asinMatch = parsed.pathname.match(ASIN_RE);
+    if (asinMatch) {
+      const clean = new URL(`https://${domain}/dp/${asinMatch[1].toUpperCase()}/`);
+      if (tag) clean.searchParams.set('tag', tag);
+      return clean.toString();
+    }
+
+    // Non-ASIN URL (search page, etc.) — swap domain and set tag
+    parsed.hostname = domain;
     if (tag) {
       parsed.searchParams.set('tag', tag);
     } else {
@@ -59,7 +78,7 @@ function regionalizeAmazonUrl(url, country) {
     }
     return parsed.toString();
   } catch {
-    return url;
+    return rawUrl;
   }
 }
 
@@ -183,7 +202,6 @@ export default function SharedList() {
   const ownerCountry = owner?.country || 'US';
 
   function regionalize(item) {
-    if (ownerCountry === 'US') return item;
     const regional = regionalizeAmazonUrl(item.affiliate_url || item.url, ownerCountry);
     return regional !== (item.affiliate_url || item.url)
       ? { ...item, affiliate_url: regional }

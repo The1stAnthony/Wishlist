@@ -28,20 +28,44 @@ const AFFILIATE_TAGS = {
   'www.amazon.pl':     'alliwant054-21',
 };
 
+// Matches /dp/, /gp/product/, or /product/ ASIN patterns (10 alphanumeric chars).
+const ASIN_RE = /\/(?:dp|gp\/product|product)\/([A-Z0-9]{10})(?:\/|$|\?|#)/i;
+
+function normalizeAmazonUrl(raw) {
+  let u = raw.trim();
+  if (!u.startsWith('http://') && !u.startsWith('https://')) u = 'https://' + u;
+  u = u.replace(/^http:\/\//, 'https://');
+  // Add www. to bare amazon domains (e.g. amazon.com → www.amazon.com)
+  u = u.replace(/^(https:\/\/)(?!www\.)(amazon\.)/, '$1www.$2');
+  return u;
+}
+
 function buildAmazonUrl(term) {
   const encodedTerm = encodeURIComponent(term.trim());
   return `https://www.amazon.com/s?k=${encodedTerm}&tag=alliwant0a-20`;
 }
 
-function injectAffiliateTag(url) {
+function injectAffiliateTag(rawUrl) {
   try {
-    const parsed = new URL(url);
-    if (!parsed.hostname.includes('amazon.')) return url;
+    const normalized = normalizeAmazonUrl(rawUrl);
+    const parsed = new URL(normalized);
+    if (!parsed.hostname.includes('amazon.')) return rawUrl;
+
     const tag = AFFILIATE_TAGS[parsed.hostname];
+
+    // Extract ASIN → build the canonical /dp/{ASIN}/?tag= URL (strips all junk params)
+    const asinMatch = parsed.pathname.match(ASIN_RE);
+    if (asinMatch) {
+      const clean = new URL(`https://${parsed.hostname}/dp/${asinMatch[1].toUpperCase()}/`);
+      if (tag) clean.searchParams.set('tag', tag);
+      return clean.toString();
+    }
+
+    // Non-ASIN URL (search page, category, etc.) — just set the tag
     if (tag) parsed.searchParams.set('tag', tag);
     return parsed.toString();
   } catch {
-    return url;
+    return rawUrl;
   }
 }
 
