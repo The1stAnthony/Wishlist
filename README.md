@@ -223,7 +223,7 @@ Feature history for reference — all of the below is live on `alliwant.xyz`:
 
 ---
 
-## 🚧 Beta Roadmap — v0.1.0
+## 🚧 Beta Roadmap — v0.2.1
 
 The following must be completed before AllIWant exits Alpha and enters Beta.
 
