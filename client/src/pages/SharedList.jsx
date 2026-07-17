@@ -102,6 +102,18 @@ export default function SharedList() {
     }
   }
 
+  async function handleUndo(itemId) {
+    try {
+      const res = await axios.delete(`/api/wishlists/items/${itemId}/purchase`);
+      setData((prev) => ({
+        ...prev,
+        items: prev.items.map((i) => i.id === itemId ? { ...i, ...res.data.item } : i),
+      }));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Could not undo purchase.');
+    }
+  }
+
   if (loading) return <div className="page-loading">Loading wishlist…</div>;
 
   if (error) {
@@ -304,7 +316,7 @@ export default function SharedList() {
         {unpurchased.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             {unpurchased.map((item) => (
-              <GiftCard key={item.id} item={item} onPurchase={handlePurchase} showPurchase={canMarkBought} />
+              <GiftCard key={item.id} item={item} onPurchase={handlePurchase} showPurchase={canMarkBought} onUndo={handleUndo} currentUserId={user?.id} />
             ))}
           </div>
         )}
@@ -320,7 +332,7 @@ export default function SharedList() {
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
               {purchased.map((item) => (
-                <GiftCard key={item.id} item={item} showPurchase={false} />
+                <GiftCard key={item.id} item={item} showPurchase={false} onUndo={handleUndo} currentUserId={user?.id} />
               ))}
             </div>
           </>

@@ -531,6 +531,49 @@ router.delete('/items/:itemId/links/:wishlistId', requireAuth, async (req, res) 
   }
 });
 
+// ── DELETE /api/wishlists/items/:itemId/purchase ────────────────────────────
+// Undo a purchase — only the user who originally marked it bought can undo
+
+router.delete('/items/:itemId/purchase', requireAuth, async (req, res) => {
+  try {
+    const item = await queryOne(
+      `SELECT i.*, w.user_id AS wishlist_owner_id
+       FROM wishlist_items i
+       JOIN wishlists w ON w.id = i.wishlist_id
+       WHERE i.id = $1`,
+      [req.params.itemId]
+    );
+    if (!item) return res.status(404).json({ error: 'Item not found' });
+
+    if (String(item.purchased_by) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'Only the person who marked this as bought can undo it' });
+    }
+
+    const updated = await queryOne(
+      `UPDATE wishlist_items
+       SET purchased_count = 0, is_purchased = false, purchased_by = null
+       WHERE id = $1
+       RETURNING *`,
+      [req.params.itemId]
+    );
+
+    // Propagate undo to all linked items
+    if (item.item_group_id) {
+      await query(
+        `UPDATE wishlist_items
+         SET purchased_count = 0, is_purchased = false, purchased_by = null
+         WHERE item_group_id = $1 AND id != $2`,
+        [item.item_group_id, req.params.itemId]
+      );
+    }
+
+    res.json({ success: true, item: updated });
+  } catch (err) {
+    console.error('Undo purchase error:', err);
+    res.status(500).json({ error: 'Could not undo purchase' });
+  }
+});
+
 // ── POST /api/wishlists/items/:itemId/purchase ──────────────────────────────
 // Requires a logged-in account to mark items purchased.
 // This prevents anonymous abuse (marking everything bought to ruin someone's list).
