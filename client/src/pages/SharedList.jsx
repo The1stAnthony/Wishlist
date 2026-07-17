@@ -6,24 +6,57 @@ import AdBanner from '../components/AdBanner';
 import JsonLd from '../components/JsonLd';
 import { useAuth } from '../context/AuthContext';
 
+// Country → Amazon domain. Countries without their own store route through a regional one.
 const AMAZON_DOMAINS = {
-  US: 'www.amazon.com',    CA: 'www.amazon.ca',       GB: 'www.amazon.co.uk',
-  DE: 'www.amazon.de',     FR: 'www.amazon.fr',       IT: 'www.amazon.it',
-  ES: 'www.amazon.es',     NL: 'www.amazon.nl',       SE: 'www.amazon.se',
-  PL: 'www.amazon.pl',     AU: 'www.amazon.com.au',   MX: 'www.amazon.com.mx',
+  US: 'www.amazon.com',
+  CA: 'www.amazon.ca',
+  GB: 'www.amazon.co.uk',
+  IE: 'www.amazon.co.uk',   // Ireland → UK store
+  DE: 'www.amazon.de',
+  AT: 'www.amazon.de',      // Austria → Germany store
+  CH: 'www.amazon.de',      // Switzerland → Germany store
+  DK: 'www.amazon.de',      // Denmark → Germany store
+  NO: 'www.amazon.de',      // Norway → Germany store
+  FI: 'www.amazon.de',      // Finland → Germany store
+  FR: 'www.amazon.fr',
+  IT: 'www.amazon.it',
+  ES: 'www.amazon.es',
+  PT: 'www.amazon.es',      // Portugal → Spain store
+  NL: 'www.amazon.nl',
+  BE: 'www.amazon.com.be',
+  SE: 'www.amazon.se',
+  PL: 'www.amazon.pl',
+};
+
+// Affiliate tag per Amazon domain (Associates program store IDs).
+const AFFILIATE_TAGS = {
+  'www.amazon.com':    'alliwant0a-20',
+  'www.amazon.ca':     'alliwant0e-20',
+  'www.amazon.co.uk':  'alliwant0c-21',
+  'www.amazon.de':     'alliwant06-21',
+  'www.amazon.fr':     'alliwant08-21',
+  'www.amazon.it':     'alliwant04-21',
+  'www.amazon.es':     'alliwant01-21',
+  'www.amazon.nl':     'alliwant031-21',
+  'www.amazon.com.be': 'alliwant0f1-21',
+  'www.amazon.se':     'alliwant09-21',
+  'www.amazon.pl':     'alliwant054-21',
 };
 
 function regionalizeAmazonUrl(url, country) {
   if (!url || !country) return url;
   const domain = AMAZON_DOMAINS[country];
-  if (!domain || domain === 'www.amazon.com') return url;
+  if (!domain) return url;
   try {
     const parsed = new URL(url);
     if (!parsed.hostname.includes('amazon.')) return url;
     parsed.hostname = domain;
-    // Strip the US affiliate tag — it doesn't earn on non-US stores.
-    // TODO: add per-country tags here once enrolled in each country's Associates program.
-    parsed.searchParams.delete('tag');
+    const tag = AFFILIATE_TAGS[domain];
+    if (tag) {
+      parsed.searchParams.set('tag', tag);
+    } else {
+      parsed.searchParams.delete('tag');
+    }
     return parsed.toString();
   } catch {
     return url;
