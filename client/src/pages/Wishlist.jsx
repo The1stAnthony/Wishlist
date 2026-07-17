@@ -341,10 +341,19 @@ export default function Wishlist() {
             )}
           </div>
 
-          {/* Quick navigation to gift search */}
-          <Link to="/search" className="btn-secondary" style={{ flexShrink: 0 }}>
-            🔍 Find gifts
-          </Link>
+          {/* Quick navigation to gift search + preview */}
+          <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+            <Link
+              to={`/list/${wishlist?.share_token}?preview=1`}
+              className="btn-ghost"
+              style={{ flexShrink: 0, fontSize: '0.875rem' }}
+            >
+              👁 Preview
+            </Link>
+            <Link to="/search" className="btn-secondary" style={{ flexShrink: 0 }}>
+              🔍 Find gifts
+            </Link>
+          </div>
         </div>
 
         {/* ── Theme image ──────────────────────────────────────────────────── */}

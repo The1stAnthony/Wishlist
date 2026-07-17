@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import GiftCard from '../components/GiftCard';
 import AdBanner from '../components/AdBanner';
@@ -36,8 +36,11 @@ function regionalizeAmazonUrl(url, country) {
  * Gifters must have an account to mark items purchased (prevents abuse).
  */
 export default function SharedList() {
-  const { token } = useParams();
-  const { user }  = useAuth();
+  const { token }         = useParams();
+  const { user }          = useAuth();
+  const [searchParams]    = useSearchParams();
+  const navigate          = useNavigate();
+  const isPreview         = searchParams.get('preview') === '1';
 
   const [data,         setData]         = useState(null);
   const [loading,      setLoading]      = useState(true);
@@ -157,8 +160,8 @@ export default function SharedList() {
   const unpurchased = items.filter((i) => (i.purchased_count || 0) < (i.quantity || 1)).map(regionalize);
   const purchased   = items.filter((i) => (i.purchased_count || 0) >= (i.quantity || 1)).map(regionalize);
 
-  // "Mark bought" requires: logged in, AND (list is non-public OR viewer follows the creator OR viewer IS the owner)
-  const canMarkBought = !!user && (
+  // "Mark bought" requires: logged in, not in preview, AND (list is non-public OR viewer follows the creator OR viewer IS the owner)
+  const canMarkBought = !isPreview && !!user && (
     wishlist.visibility !== 'public' ||
     isFollowing ||
     user.id === owner.id
@@ -203,6 +206,36 @@ export default function SharedList() {
     <div className="page-with-sidebar">
       <JsonLd data={listSchema} />
       <div>
+        {/* ── Preview mode banner ──────────────────────────────────────────── */}
+        {isPreview && (
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 50,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '0.625rem 1rem',
+            background: '#1E1B4B',
+            color: 'white',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: '1rem',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+          }}>
+            <span>👁 Preview Mode — this is what your visitors see</span>
+            <button
+              onClick={() => navigate(`/wishlist/${wishlist.id}`)}
+              style={{
+                background: 'white', color: '#1E1B4B',
+                border: 'none', borderRadius: 'var(--radius-md)',
+                padding: '0.35rem 0.875rem',
+                fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem',
+                flexShrink: 0,
+              }}
+            >
+              Exit Preview
+            </button>
+          </div>
+        )}
+
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div style={{ textAlign: 'center', padding: '2rem 0 1.5rem' }}>
           {/* Theme image or owner pfp */}
@@ -324,8 +357,8 @@ export default function SharedList() {
         {/* Ad between sections */}
         {unpurchased.length > 0 && <AdBanner format="horizontal" style={{ marginBottom: '2rem' }} />}
 
-        {/* Already purchased section */}
-        {purchased.length > 0 && (
+        {/* Already purchased section — hidden in preview mode to prevent spoilers */}
+        {purchased.length > 0 && !isPreview && (
           <>
             <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
               ✅ Already purchased
@@ -336,6 +369,15 @@ export default function SharedList() {
               ))}
             </div>
           </>
+        )}
+        {purchased.length > 0 && isPreview && (
+          <div style={{
+            padding: '0.875rem 1rem', borderRadius: 'var(--radius-md)',
+            background: '#F5F3FF', border: '1px solid #C4B5FD',
+            fontSize: '0.8rem', color: '#5B21B6', fontWeight: 500,
+          }}>
+            🎁 {purchased.length} item{purchased.length !== 1 ? 's have' : ' has'} been marked as bought — hidden from you in preview to avoid spoilers.
+          </div>
         )}
 
         {/* Bottom CTA — viral growth hook */}
