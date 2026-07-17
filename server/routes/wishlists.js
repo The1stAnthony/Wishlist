@@ -612,7 +612,6 @@ router.post('/items/:itemId/purchase', requireAuth, async (req, res) => {
           [item.wishlist_id, viewerId]
         );
         if (!permitted) return res.status(403).json({ error: 'You do not have access to this wishlist' });
-      }
       } else if (visibility === 'public') {
         // Public creator wishlists — must be a follower to prevent random abuse
         const follow = await queryOne(
@@ -620,6 +619,7 @@ router.post('/items/:itemId/purchase', requireAuth, async (req, res) => {
           [viewerId, ownerId]
         );
         if (!follow) return res.status(403).json({ error: 'You must follow this creator to mark gifts as bought' });
+      }
     }
 
     const remaining = (item.quantity || 1) - (item.purchased_count || 0);

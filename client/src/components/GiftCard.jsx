@@ -13,7 +13,8 @@ export default function GiftCard({ item, onPurchase, showPurchase = false, onUnd
 
   const [buyQty, setBuyQty] = useState(1);
 
-  const canUndo = isFullyBought && onUndo && String(item.purchased_by) === String(currentUserId);
+  // eslint-disable-next-line eqeqeq
+  const canUndo = isFullyBought && !!onUndo && item.purchased_by != null && currentUserId != null && item.purchased_by == currentUserId;
 
   return (
     <div className={`gift-card ${isFullyBought ? 'is-purchased' : ''}`}>
