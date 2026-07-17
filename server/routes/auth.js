@@ -24,8 +24,8 @@ const router = express.Router();
 // Columns safe to return to the client — never includes password
 const PUBLIC_FIELDS = 'id, name, display_name, email, birthday, avatar_url, creator_mode, created_at';
 
-// Owner's profile fetch also includes the private address fields
-const OWNER_FIELDS  = `${PUBLIC_FIELDS}, street_address, city, state, zip_code, country`;
+// Owner's profile fetch also includes the private and creator address fields
+const OWNER_FIELDS  = `${PUBLIC_FIELDS}, street_address, city, state, zip_code, country, creator_street_address, creator_city, creator_state, creator_zip_code`;
 
 function createToken(user) {
   return jwt.sign(
@@ -127,7 +127,8 @@ router.get('/me', requireAuth, async (req, res) => {
 
 router.patch('/profile', requireAuth, async (req, res) => {
   const { name, display_name, birthday, avatar_url,
-          street_address, city, state, zip_code, country } = req.body;
+          street_address, city, state, zip_code, country,
+          creator_street_address, creator_city, creator_state, creator_zip_code } = req.body;
 
   if (!name?.trim()) return res.status(400).json({ error: 'Name is required' });
 
@@ -145,18 +146,23 @@ router.patch('/profile', requireAuth, async (req, res) => {
     await query(
       `UPDATE users
        SET name = $1, display_name = $2, birthday = $3, avatar_url = $4,
-           street_address = $5, city = $6, state = $7, zip_code = $8, country = $9
-       WHERE id = $10`,
+           street_address = $5, city = $6, state = $7, zip_code = $8, country = $9,
+           creator_street_address = $10, creator_city = $11, creator_state = $12, creator_zip_code = $13
+       WHERE id = $14`,
       [
         name.trim(),
         cleanHandle,
-        birthday       || null,
-        avatar_url     || null,
-        street_address || null,
-        city           || null,
-        state          || null,
-        zip_code       || null,
-        country        || 'US',
+        birthday                || null,
+        avatar_url              || null,
+        street_address          || null,
+        city                    || null,
+        state                   || null,
+        zip_code                || null,
+        country                 || 'US',
+        creator_street_address  || null,
+        creator_city            || null,
+        creator_state           || null,
+        creator_zip_code        || null,
         req.user.id,
       ]
     );

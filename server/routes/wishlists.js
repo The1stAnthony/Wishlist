@@ -117,10 +117,11 @@ router.get('/share/:token', async (req, res) => {
     }
 
     const ownerRow = await queryOne(
-      'SELECT id, name, display_name, street_address, city, state, zip_code, country, avatar_url FROM users WHERE id = $1',
+      'SELECT id, name, display_name, street_address, city, state, zip_code, country, avatar_url, creator_street_address, creator_city, creator_state, creator_zip_code FROM users WHERE id = $1',
       [wishlist.user_id]
     );
 
+    const useCreatorAddr = wishlist.visibility === 'public';
     const owner = {
       id:           ownerRow.id,
       // Public wishlists show alias; friends/specific show real name
@@ -132,10 +133,11 @@ router.get('/share/:token', async (req, res) => {
       avatar_url:   ownerRow.avatar_url,
       country:      ownerRow.country || 'US',
       ...(wishlist.share_address && {
-        street_address: ownerRow.street_address,
-        city:           ownerRow.city,
-        state:          ownerRow.state,
-        zip_code:       ownerRow.zip_code,
+        // Public wishlists show the creator (public) address; friends/specific show private address
+        street_address: useCreatorAddr ? ownerRow.creator_street_address : ownerRow.street_address,
+        city:           useCreatorAddr ? ownerRow.creator_city           : ownerRow.city,
+        state:          useCreatorAddr ? ownerRow.creator_state          : ownerRow.state,
+        zip_code:       useCreatorAddr ? ownerRow.creator_zip_code       : ownerRow.zip_code,
       }),
     };
 

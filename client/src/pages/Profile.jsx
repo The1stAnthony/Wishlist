@@ -43,6 +43,10 @@ export default function Profile() {
     state:          '',
     zip_code:       '',
     country:        'US',
+    creator_street_address: '',
+    creator_city:           '',
+    creator_state:          '',
+    creator_zip_code:       '',
   });
   const [stats,   setStats]   = useState({ wishlists: 0, contacts: 0, items: 0 });
   const [saving,  setSaving]  = useState(false);
@@ -79,6 +83,10 @@ export default function Profile() {
         state:          user.state          || '',
         zip_code:       user.zip_code       || '',
         country:        user.country        || 'US',
+        creator_street_address: user.creator_street_address || '',
+        creator_city:           user.creator_city           || '',
+        creator_state:          user.creator_state          || '',
+        creator_zip_code:       user.creator_zip_code       || '',
       });
       setCreatorMode(Boolean(user.creator_mode));
     }
@@ -192,7 +200,8 @@ export default function Profile() {
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : null;
 
-  const hasAddress = form.street_address || form.city || form.zip_code;
+  const hasAddress        = form.street_address         || form.city         || form.zip_code;
+  const hasCreatorAddress = form.creator_street_address || form.creator_city || form.creator_zip_code;
 
   return (
     <div style={{ maxWidth: 680, margin: '0 auto', padding: '2rem 1.5rem' }}>
@@ -349,6 +358,60 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {/* ── Creator shipping address (visible only when creator mode is on) ── */}
+        {creatorMode && (
+          <div className="profile-card">
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1rem', gap: '1rem' }}>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>
+                  📦 Creator shipping address
+                </p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+                  Shown to followers on your <strong>public</strong> wishlists when you enable address sharing. Use a PO Box or business address — not your home.
+                </p>
+              </div>
+              {hasCreatorAddress && (
+                <span className="badge badge-green" style={{ flexShrink: 0 }}>Saved</span>
+              )}
+            </div>
+
+            <div className="profile-form-grid">
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="form-label">Street address</label>
+                <input
+                  name="creator_street_address"
+                  className="form-input"
+                  placeholder="PO Box 123 or business address"
+                  value={form.creator_street_address}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label className="form-label">City</label>
+                <input name="creator_city" className="form-input" placeholder="New York" value={form.creator_city} onChange={handleChange} />
+              </div>
+
+              <div>
+                <label className="form-label">State / Province</label>
+                <input name="creator_state" className="form-input" placeholder="NY" value={form.creator_state} onChange={handleChange} />
+              </div>
+
+              <div>
+                <label className="form-label">ZIP / Postal code</label>
+                <input name="creator_zip_code" className="form-input" placeholder="10001" value={form.creator_zip_code} onChange={handleChange} />
+              </div>
+
+              <div>
+                <label className="form-label">Country</label>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', lineHeight: 1.5 }}>
+                  Uses the country from your Private Shipping Address below.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Private shipping address ───────────────────────────────────────── */}
         <div className="profile-card">
