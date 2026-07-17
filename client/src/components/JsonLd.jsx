@@ -8,7 +8,7 @@ export default function JsonLd({ data }) {
   useEffect(() => {
     const script = document.createElement('script');
     script.type = 'application/ld+json';
-    script.textContent = JSON.stringify(Array.isArray(data) ? data : data);
+    script.textContent = JSON.stringify(data);
     document.head.appendChild(script);
     return () => {
       if (document.head.contains(script)) document.head.removeChild(script);

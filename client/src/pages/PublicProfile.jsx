@@ -36,6 +36,11 @@ export default function PublicProfile() {
     ]).then(([profileRes, followRes]) => {
       setData(profileRes.data);
       setFollowing(followRes.data.following);
+      const name = profileRes.data.creator.display_name || profileRes.data.creator.name;
+      const count = profileRes.data.wishlists.length;
+      document.title = `@${name}'s Wishlists – All I Want`;
+      const desc = document.querySelector('meta[name="description"]');
+      if (desc) desc.setAttribute('content', `Browse @${name}'s gift wishlist${count !== 1 ? 's' : ''} on All I Want — ${count} list${count !== 1 ? 's' : ''} updated for birthdays, holidays, and fan gifting.`);
     }).catch(() => setError('Creator not found.'))
       .finally(() => setLoading(false));
   }, [handle, user]);

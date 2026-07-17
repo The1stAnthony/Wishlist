@@ -48,8 +48,11 @@ export default function SharedList() {
     axios.get(`/api/wishlists/share/${token}`)
       .then((res) => {
         setData(res.data);
-        if (res.data?.wishlist?.title) {
-          document.title = `${res.data.wishlist.title} – All I Want`;
+        const { wishlist, owner, items } = res.data;
+        if (wishlist?.title) {
+          document.title = `${wishlist.title} – ${owner?.shown_name}'s Wishlist | All I Want`;
+          const desc = document.querySelector('meta[name="description"]');
+          if (desc) desc.setAttribute('content', `Shop ${wishlist.title} — ${owner?.shown_name}'s gift wishlist on All I Want. ${items?.length || 0} gift ideas for every budget. No duplicates, no spoilers.`);
         }
       })
       .catch((err) => {
