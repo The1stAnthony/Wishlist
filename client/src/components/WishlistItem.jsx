@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import '../styles/components/wishlist-item.css';
 
 const PRIORITY_LABELS = { 1: '🔴 High', 2: '🟡 Medium', 3: '🟢 Low' };
@@ -17,11 +18,13 @@ export default function WishlistItem({
   const remaining     = quantity - purchased;
   const isFullyBought = !spoilerFree && remaining <= 0;
 
-  const [buyQty,      setBuyQty]      = useState(1);
-  const [isEditing,   setIsEditing]   = useState(false);
-  const [editSaving,  setEditSaving]  = useState(false);
-  const [linkedLists, setLinkedLists] = useState(new Set());
-  const [editForm,    setEditForm]    = useState({
+  const [buyQty,        setBuyQty]        = useState(1);
+  const [isEditing,     setIsEditing]     = useState(false);
+  const [editSaving,    setEditSaving]    = useState(false);
+  const [editLoading,   setEditLoading]   = useState(false);
+  const [linkedLists,   setLinkedLists]   = useState(new Set());
+  const [prevLinkedIds, setPrevLinkedIds] = useState(new Set());
+  const [editForm,      setEditForm]      = useState({
     name:        item.name                                 || '',
     description: item.description                          || '',
     price:       item.price       ? String(item.price)    : '',
@@ -31,8 +34,7 @@ export default function WishlistItem({
     quantity:    String(item.quantity || 1),
   });
 
-  function openEdit() {
-    // Reset form to current item values each time the panel opens
+  async function openEdit() {
     setEditForm({
       name:        item.name                              || '',
       description: item.description                        || '',
@@ -43,7 +45,17 @@ export default function WishlistItem({
       quantity:    String(item.quantity || 1),
     });
     setLinkedLists(new Set());
+    setPrevLinkedIds(new Set());
     setIsEditing(true);
+    setEditLoading(true);
+    try {
+      const res = await axios.get(`/api/wishlists/items/${item.id}/linked-lists`);
+      const ids = new Set((res.data.wishlistIds || []).map(String));
+      setLinkedLists(ids);
+      setPrevLinkedIds(ids);
+    } catch { /* treat as not linked */ } finally {
+      setEditLoading(false);
+    }
   }
 
   function handleEditChange(e) {
@@ -51,9 +63,10 @@ export default function WishlistItem({
   }
 
   function toggleLinked(wishlistId) {
+    const key = String(wishlistId);
     setLinkedLists((prev) => {
       const next = new Set(prev);
-      if (next.has(wishlistId)) next.delete(wishlistId); else next.add(wishlistId);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   }
@@ -62,12 +75,14 @@ export default function WishlistItem({
     if (!editForm.name.trim()) return;
     setEditSaving(true);
     try {
+      const toAdd    = [...linkedLists].filter((id) => !prevLinkedIds.has(id)).map(Number);
+      const toRemove = [...prevLinkedIds].filter((id) => !linkedLists.has(id)).map(Number);
       await onEdit(item.id, {
         ...editForm,
         price:    editForm.price    ? parseFloat(editForm.price)    : null,
         priority: parseInt(editForm.priority, 10),
         quantity: parseInt(editForm.quantity,  10) || 1,
-      }, [...linkedLists]);
+      }, { toAdd, toRemove });
       setIsEditing(false);
     } finally {
       setEditSaving(false);
@@ -318,20 +333,27 @@ export default function WishlistItem({
             {/* Cross-list linking */}
             {myWishlists.length > 0 && (
               <div className="full-width">
-                <label className="form-label">Also add to your other wishlists</label>
-                <div className="wishlist-item-link-list">
-                  {myWishlists.map((w) => (
-                    <label key={w.id}>
-                      <input
-                        type="checkbox"
-                        checked={linkedLists.has(w.id)}
-                        onChange={() => toggleLinked(w.id)}
-                        style={{ accentColor: 'var(--color-primary)', width: 14, height: 14 }}
-                      />
-                      {w.title}
-                    </label>
-                  ))}
-                </div>
+                <label className="form-label">Sync with your other wishlists</label>
+                <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: '0.35rem' }}>
+                  Checked = linked (edits + buys sync). Uncheck to remove from that list.
+                </p>
+                {editLoading ? (
+                  <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Loading…</p>
+                ) : (
+                  <div className="wishlist-item-link-list">
+                    {myWishlists.map((w) => (
+                      <label key={w.id}>
+                        <input
+                          type="checkbox"
+                          checked={linkedLists.has(String(w.id))}
+                          onChange={() => toggleLinked(w.id)}
+                          style={{ accentColor: 'var(--color-primary)', width: 14, height: 14 }}
+                        />
+                        {w.title}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

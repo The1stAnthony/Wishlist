@@ -95,6 +95,11 @@ img {
   padding: 2rem 2.5rem;
 }
 
+/* Prevent the main column from growing beyond its allocated 1fr */
+.page-with-sidebar > *:first-child {
+  min-width: 0;
+}
+
 /* Three-column layout: left-ad | main | right-ad (used on Dashboard) */
 .page-with-sidebar-3col {
   display: grid;

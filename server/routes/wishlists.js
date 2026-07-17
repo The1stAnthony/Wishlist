@@ -323,7 +323,7 @@ router.put('/:id/permissions', requireAuth, async (req, res) => {
 // ── POST /api/wishlists/:id/items ───────────────────────────────────────────
 
 router.post('/:id/items', requireAuth, async (req, res) => {
-  const { name, description, price, url, affiliate_url, image_url, priority, quantity } = req.body;
+  const { name, description, price, url, affiliate_url, image_url, priority, quantity, source_item_id } = req.body;
   if (!name) return res.status(400).json({ error: 'Item name is required' });
 
   try {
@@ -351,9 +351,28 @@ router.post('/:id/items', requireAuth, async (req, res) => {
       ]
     );
 
-    // Auto-link: if the same URL exists in another wishlist owned by this user,
-    // assign them the same item_group_id so purchases sync across lists.
-    if (url) {
+    // Explicit cross-list link: caller supplied the source item ID to link with.
+    // Get or create a group_id for the source item, then assign it to the new item.
+    if (source_item_id) {
+      const sourceItem = await queryOne(
+        `SELECT i.id, i.item_group_id FROM wishlist_items i
+         JOIN wishlists w ON w.id = i.wishlist_id
+         WHERE i.id = $1 AND w.user_id = $2`,
+        [source_item_id, req.user.id]
+      );
+      if (sourceItem) {
+        const groupId = sourceItem.item_group_id || uuid().replace(/-/g, '');
+        if (!sourceItem.item_group_id) {
+          await query('UPDATE wishlist_items SET item_group_id = $1 WHERE id = $2',
+            [groupId, sourceItem.id]);
+        }
+        await query('UPDATE wishlist_items SET item_group_id = $1 WHERE id = $2',
+          [groupId, item.id]);
+        item.item_group_id = groupId;
+      }
+    } else if (url) {
+      // Auto-link: if the same URL exists in another wishlist owned by this user,
+      // assign them the same item_group_id so purchases sync across lists.
       const sibling = await queryOne(
         `SELECT i.id, i.item_group_id
          FROM wishlist_items i
@@ -365,7 +384,6 @@ router.post('/:id/items', requireAuth, async (req, res) => {
       if (sibling) {
         const groupId = sibling.item_group_id || uuid().replace(/-/g, '');
         if (!sibling.item_group_id) {
-          // Seed group id onto the sibling (and any other same-URL items)
           await query(
             `UPDATE wishlist_items SET item_group_id = $1
              WHERE url = $2
@@ -388,15 +406,43 @@ router.post('/:id/items', requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/wishlists/items/:itemId/linked-lists ──────────────────────────
+// Returns IDs of the current user's wishlists that have an item linked to this one
+
+router.get('/items/:itemId/linked-lists', requireAuth, async (req, res) => {
+  try {
+    const owned = await queryOne(
+      `SELECT i.id, i.item_group_id FROM wishlist_items i
+       JOIN wishlists w ON w.id = i.wishlist_id
+       WHERE i.id = $1 AND w.user_id = $2`,
+      [req.params.itemId, req.user.id]
+    );
+    if (!owned?.item_group_id) return res.json({ wishlistIds: [] });
+
+    const rows = await query(
+      `SELECT i2.wishlist_id
+       FROM wishlist_items i2
+       JOIN wishlists w ON w.id = i2.wishlist_id
+       WHERE i2.item_group_id = $1
+         AND i2.id != $2
+         AND w.user_id = $3`,
+      [owned.item_group_id, req.params.itemId, req.user.id]
+    );
+    res.json({ wishlistIds: rows.map((r) => r.wishlist_id) });
+  } catch (err) {
+    console.error('Linked lists error:', err);
+    res.status(500).json({ error: 'Could not fetch linked lists' });
+  }
+});
+
 // ── PATCH /api/wishlists/items/:itemId ─────────────────────────────────────
 
 router.patch('/items/:itemId', requireAuth, async (req, res) => {
   const { name, description, price, url, affiliate_url, image_url, priority, quantity } = req.body;
 
   try {
-    // Confirm ownership via join
     const owned = await queryOne(
-      `SELECT i.id FROM wishlist_items i
+      `SELECT i.id, i.item_group_id FROM wishlist_items i
        JOIN wishlists w ON w.id = i.wishlist_id
        WHERE i.id = $1 AND w.user_id = $2`,
       [req.params.itemId, req.user.id]
@@ -413,6 +459,21 @@ router.patch('/items/:itemId', requireAuth, async (req, res) => {
        affiliate_url || null, image_url || null, priority || 2,
        Math.max(1, parseInt(quantity) || 1), req.params.itemId]
     );
+
+    // Propagate edits to all linked items so they stay in sync
+    if (owned.item_group_id) {
+      await query(
+        `UPDATE wishlist_items
+         SET name = $1, description = $2, price = $3, url = $4,
+             affiliate_url = $5, image_url = $6, priority = $7, quantity = $8
+         WHERE item_group_id = $9 AND id != $10`,
+        [name, description || null, price || null, url || null,
+         affiliate_url || null, image_url || null, priority || 2,
+         Math.max(1, parseInt(quantity) || 1),
+         owned.item_group_id, req.params.itemId]
+      );
+    }
+
     res.json({ item });
   } catch (err) {
     console.error('Update item error:', err);
@@ -437,6 +498,36 @@ router.delete('/items/:itemId', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Delete item error:', err);
     res.status(500).json({ error: 'Could not delete item' });
+  }
+});
+
+// ── DELETE /api/wishlists/items/:itemId/links/:wishlistId ──────────────────
+// Remove the linked copy of this item from the specified target wishlist
+
+router.delete('/items/:itemId/links/:wishlistId', requireAuth, async (req, res) => {
+  try {
+    const source = await queryOne(
+      `SELECT i.item_group_id FROM wishlist_items i
+       JOIN wishlists w ON w.id = i.wishlist_id
+       WHERE i.id = $1 AND w.user_id = $2`,
+      [req.params.itemId, req.user.id]
+    );
+    if (!source?.item_group_id) return res.status(404).json({ error: 'Item or group not found' });
+
+    const targetWishlist = await queryOne(
+      'SELECT id FROM wishlists WHERE id = $1 AND user_id = $2',
+      [parseInt(req.params.wishlistId), req.user.id]
+    );
+    if (!targetWishlist) return res.status(404).json({ error: 'Target wishlist not found' });
+
+    await query(
+      'DELETE FROM wishlist_items WHERE wishlist_id = $1 AND item_group_id = $2',
+      [parseInt(req.params.wishlistId), source.item_group_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Unlink item error:', err);
+    res.status(500).json({ error: 'Could not unlink item' });
   }
 });
 

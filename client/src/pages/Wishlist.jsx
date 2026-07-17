@@ -168,7 +168,8 @@ export default function Wishlist() {
     }
   }
 
-  async function handleEditItem(itemId, updatedData, linkedIds = []) {
+  async function handleEditItem(itemId, updatedData, linkedChanges = {}) {
+    const { toAdd = [], toRemove = [] } = linkedChanges;
     try {
       // Re-tag Amazon links
       let affiliateUrl = updatedData.url || '';
@@ -180,16 +181,24 @@ export default function Wishlist() {
       }
 
       const payload = { ...updatedData, affiliate_url: affiliateUrl || updatedData.url || '' };
+      // PATCH updates the item and propagates to all already-linked items on the backend
       const res = await axios.patch(`/api/wishlists/items/${itemId}`, payload);
       setItems((prev) => prev.map((i) => i.id === itemId ? { ...i, ...res.data.item } : i));
 
-      // Copy to any additionally linked wishlists
-      for (const wId of linkedIds) {
-        try { await axios.post(`/api/wishlists/${wId}/items`, payload); } catch { /* silent */ }
+      // Link to newly selected wishlists (source_item_id ensures group_id is always created)
+      for (const wId of toAdd) {
+        try { await axios.post(`/api/wishlists/${wId}/items`, { ...payload, source_item_id: itemId }); } catch { /* silent */ }
       }
 
-      const extra = linkedIds.length > 0 ? ` and added to ${linkedIds.length} other list${linkedIds.length > 1 ? 's' : ''}` : '';
-      showToast(`✅ Item updated${extra}!`);
+      // Remove from deselected wishlists
+      for (const wId of toRemove) {
+        try { await axios.delete(`/api/wishlists/items/${itemId}/links/${wId}`); } catch { /* silent */ }
+      }
+
+      const changes = [];
+      if (toAdd.length)    changes.push(`linked to ${toAdd.length} more`);
+      if (toRemove.length) changes.push(`removed from ${toRemove.length}`);
+      showToast(`✅ Item updated${changes.length ? ' · ' + changes.join(', ') : ''}!`);
     } catch {
       setError('Could not update item.');
     }
