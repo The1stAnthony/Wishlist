@@ -421,7 +421,7 @@ export default function Profile() {
                 🏠 Private shipping address
               </p>
               <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
-                Stored securely. Only shared with gifters when <em>you</em> enable it per-wishlist — your address is never visible by default.
+                Stored securely. Only shared with Friends when <em>you</em> enable it per-wishlist — your address is never visible by default.
               </p>
             </div>
             {hasAddress && (

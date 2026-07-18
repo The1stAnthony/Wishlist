@@ -343,6 +343,7 @@ A structured QA pass across all pages and user flows:
 - [ ] eCard sending tied to an event
 - [ ] The goal: one app for the full party lifecycle — no more juggling Evite + Amazon + Venmo + a card app
 - [ ] `/birthdays` page currently has deprecated/unused functionality; repurpose or replace with `/events`
+- [ ] **Collaborative event hosting** — multiple users can be listed as co-hosts of an event (target: replace Punchbowl.com). Details TBD — needs design thinking on invitations, permissions, and how co-hosts appear to guests.
 
 **Discovery & Search**
 - [ ] **Creators API upgrade** — once 10 aggregate qualifying sales / 30-day window maintained, swap static catalog for live Creators API results (replaced PA-API v5, retired May 2026). Auth: OAuth 2.0 Bearer. Env vars needed: `CREATORS_API_CLIENT_ID` + `CREATORS_API_CLIENT_SECRET`.

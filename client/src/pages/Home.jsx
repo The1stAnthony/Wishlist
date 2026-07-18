@@ -34,7 +34,7 @@ const FAQS = [
   },
   {
     q: 'What is Creator Mode?',
-    a: 'Content creators can set an alias name and link a PO box so fans can send gifts without ever seeing your real address or legal name.',
+    a: 'Content creators can set an alias name and link a PO box so fans can send gifts without ever seeing your real address, personal email, or legal name. Conveniently Consolidated under one account, so you don\'t have to manage multiple profiles.',
   },
   {
     q: 'How is this different from an Amazon wishlist?',
@@ -43,6 +43,10 @@ const FAQS = [
   {
     q: 'Is my address kept private?',
     a: 'Always. Your address is never visible by default. You choose per-wishlist whether to share it, and even then only gifters you share the link with can see it.',
+  },
+  {
+    q: 'Can I accidentally dox myself?',
+    a: 'Email: never returned on any public endpoint, Real name: never shown on public lists, Home address: never shown on public lists (creator address only), Creator mode off: disappears from all discovery immediately. Accounts are consolidated under a single email and kept behind a secure firewall.',
   },
 ];
 
