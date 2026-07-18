@@ -25,6 +25,10 @@ const FAQS = [
     a: 'Yes, completely free. Create wishlists, share them, and track birthdays at no cost.',
   },
   {
+    q: 'Can I use this in Beta?',
+    a: 'Yes! The site is live and available for use. Sign up to get started. While the app is in beta, some features may still be in development. Contact Us if you have any questions, comments, or issues, and have a chance to see your feedback go live!'
+  },
+  {
     q: 'Do my friends need an account to buy gifts?',
     a: 'Yes — gifters need a free account to mark items as purchased. Signing up takes under a minute and lets them coordinate with other shoppers so nobody buys duplicates.',
   },
@@ -47,7 +51,7 @@ const FAQS = [
   {
     q: 'Can I accidentally dox myself?',
     a: 'Email: never returned on any public endpoint, Real name: never shown on public lists, Home address: never shown on public lists (creator address only), Creator mode off: disappears from all discovery immediately. Accounts are consolidated under a single email and kept behind a secure firewall.',
-  },
+  }
 ];
 
 const FAQ_SCHEMA = {
